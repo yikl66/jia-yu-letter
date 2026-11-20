@@ -1,1 +1,2344 @@
-<!doctype html><meta charset=utf-8><title>placeholder</title><h1>pages pipeline probe</h1>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>关于你</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎁</text></svg>">
+<style>
+:root{}
+@media (max-width: 560px){}
+/* 发布到公网后，托管平台会在页面尾部注入一个「Created by MiniMax Agent」的浮动角标。
+   这封信是给人看的私人物品，不要那个角标 —— 压掉它。
+   （平台那段注入的 <style> 在文档更靠后的位置，所以这里必须用 !important 才压得住。） */
+#minimax-floating-ball{display:none !important}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:#05030a}
+body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+canvas#sky{position:fixed;inset:0;z-index:0;display:block}
+.scene{position:fixed;inset:0;z-index:10;opacity:0;pointer-events:none;transition:opacity 1.35s cubic-bezier(.45,.05,.35,1)}
+.scene.active{opacity:1;pointer-events:auto}
+
+/* 密码 */
+#scene-pass{display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 45%,transparent 45%,rgba(2,2,6,.4))}
+.pw-stage{display:flex;flex-direction:column;align-items:center;gap:40px;padding:0 5vw}
+.pw-title{font-family:Georgia,serif;font-size:clamp(19px,4.6vw,34px);letter-spacing:.22em;color:#fce8f0;white-space:nowrap;opacity:0;filter:blur(6px);animation:titleTextIn 1.4s 1.6s both;text-shadow:0 0 10px rgba(255,190,220,.55)}
+@keyframes titleTextIn{from{opacity:0;filter:blur(6px);transform:translateY(8px)}to{opacity:1;filter:blur(0);transform:translateY(0)}}
+.pw-line{display:flex;align-items:center;flex-wrap:nowrap}
+.pw-label{font-size:clamp(16px,4.2vw,30px);color:#f2dfe9;white-space:nowrap;opacity:0;animation:fadeUpSoft 1.2s 2.8s both}
+.pw-line>.pw-label:first-child{margin-right:clamp(10px,1.8vw,20px)}
+.pw-line>.pw-label:last-child{margin-left:clamp(14px,2.4vw,26px)}
+@keyframes fadeUpSoft{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.pw-boxes{display:flex;gap:clamp(7px,1.4vw,11px)}
+.pw-box{width:clamp(44px,11vw,64px);height:clamp(50px,12.5vw,72px);border:1.5px solid rgba(255,205,232,.32);border-radius:11px;background:rgba(20,15,28,.46);display:flex;align-items:center;justify-content:center;color:#fce8f0;font-family:Georgia,serif;font-size:clamp(24px,6vw,36px);text-transform:uppercase;opacity:0;transform:translateY(8px);transition:.55s}
+.pw-box.activated{opacity:1;transform:translateY(0)}
+.pw-box.filled{background:rgba(30,22,40,.58);box-shadow:0 0 20px rgba(255,180,220,.42);text-shadow:0 0 10px rgba(255,205,232,.7)}
+.pw-box.wrong{border-color:rgba(255,130,150,.72);background:rgba(40,14,22,.55);color:#ffafc3}
+.pw-stage.shake{animation:shake .55s}
+@keyframes shake{0%,100%{transform:translateX(0)}18%{transform:translateX(-9px)}40%{transform:translateX(9px)}62%{transform:translateX(-6px)}82%{transform:translateX(6px)}}
+.pw-stage.ok .pw-box{border-color:rgba(255,205,232,.7);box-shadow:0 0 30px rgba(255,190,230,.6);animation:boxPop .55s}
+@keyframes boxPop{0%{transform:scale(1)}42%{transform:scale(1.14)}100%{transform:scale(1)}}
+.pw-hint{position:absolute;left:50%;bottom:12vh;transform:translateX(-50%);color:rgba(205,195,220,.55);font-size:13px;letter-spacing:3px;opacity:0;animation:fadeUpSoft 1.2s 3.2s both}
+#pwInput{position:fixed;left:50%;top:50%;width:1px;height:1px;opacity:.01;border:0;background:transparent;color:transparent;z-index:5}
+
+/* 信纸 */
+.letter-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:4vh 0}
+.scroll-wrap{position:relative;width:min(560px,78vw);height:min(74vh,680px);opacity:0;transform:translateY(40px) scale(.98);transition:1.4s}
+.scene.active .scroll-wrap{opacity:1;transform:translateY(0) scale(1)}
+.roller{position:absolute;left:-22px;right:-22px;height:46px;z-index:5;filter:drop-shadow(0 16px 22px rgba(0,0,0,.62))}
+.roller-top{top:-23px}.roller-bottom{bottom:-23px}
+.roller-body{position:absolute;inset:0;border-radius:23px;background:linear-gradient(180deg,#7c6238,#a88a5a 6%,#cdbb99 14%,#e0d0b0 22%,#efe3c9 30%,#fdf8ec 42%,#f2e8d2 54%,#e0d0b0 64%,#c8b48a 74%,#a08a5e 84%,#7c6238 92%,#4a3520);box-shadow:inset 0 2px 4px rgba(255,250,220,.7),inset 0 -3px 8px rgba(35,18,6,.78)}
+.roller-cap{position:absolute;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;z-index:6;background:radial-gradient(circle at 32% 28%,#b98a52,#8a5f30 20%,#5a3a18 50%,#36200a 78%,#1e1004);box-shadow:0 8px 16px rgba(0,0,0,.72),inset -3px -4px 8px rgba(0,0,0,.55),inset 3px 3px 8px rgba(255,220,180,.5)}
+.roller-cap-l{left:-20px}.roller-cap-r{right:-20px}
+.roll-bundle{position:absolute;left:-12px;right:-12px;top:50%;height:0;transform:translateY(-50%);border-radius:12px;background:linear-gradient(180deg,#fbf1d6,#f4e5be 16%,#ead6a6 36%,#dcc08b 56%,#c8a874 76%,#a88850 92%,#7e6238);z-index:1}
+.paper-viewport{position:absolute;top:0;left:0;right:0;height:100%;overflow:hidden;z-index:2;box-shadow:0 30px 80px rgba(0,0,0,.72),inset 0 0 80px rgba(120,90,50,.14)}
+.paper-surface{position:relative;width:100%;min-height:100%;background:linear-gradient(160deg,#fefaf0,#fdf7e8 26%,#faf1d8 52%,#f6e9c8 74%,#f1dfb8);transform-origin:top left}
+.paper-content{position:relative;padding:6vh 8vw 8vh;color:#4b3a26;font-family:'STKaiti','KaiTi',serif;font-size:clamp(17px,2.3vw,21px);line-height:2.28}
+.paper-orn{text-align:center;color:#d4b688;font-size:18px;letter-spacing:8px;margin-bottom:4vh}
+.letter-title{font-size:clamp(21px,2.9vw,27px);color:#5a4632;margin-bottom:4vh;font-weight:400}
+.letter-greet{font-size:clamp(19px,2.6vw,24px);color:#7a5a35;margin-bottom:5vh}
+.letter-p{text-indent:2em;margin-bottom:2.2vh}
+.letter-p-gap{margin-top:4vh}
+.letter-sign{text-align:right;margin-top:6vh;font-size:clamp(24px,3.2vw,32px);letter-spacing:4px;color:#5a4632}
+@keyframes letterFadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.scene.active .paper-content>*{animation:letterFadeUp 1s both}
+.scene.active .paper-content>:nth-child(1){animation-delay:1.35s}
+.scene.active .paper-content>:nth-child(2){animation-delay:1.5s}
+.scene.active .paper-content>:nth-child(3){animation-delay:1.68s}
+.scene.active .paper-content>:nth-child(4){animation-delay:1.86s}
+.scene.active .paper-content>:nth-child(5){animation-delay:2.02s}
+.scene.active .paper-content>:nth-child(6){animation-delay:2.18s}
+.scene.active .paper-content>:nth-child(7){animation-delay:2.34s}
+.scene.active .paper-content>:nth-child(8){animation-delay:2.56s}
+.scene.active .paper-content>:nth-child(9){animation-delay:2.8s}
+.scene.active .paper-content>:nth-child(10){animation-delay:2.95s}
+.roll-btn{position:absolute;left:50%;bottom:2vh;padding:10px 30px;border-radius:999px;border:1px solid rgba(255,205,235,.28);background:rgba(30,20,35,.5);color:#fce8f0;font-size:14px;letter-spacing:3px;cursor:pointer;opacity:0;pointer-events:none;transform:translateX(-50%) translateY(14px);transition:.9s;z-index:20}
+.roll-btn.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+
+/* 卷轴 */
+.scroll-wrap2{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+.scroll-svg{height:min(56vh,410px);width:calc(min(56vh,410px)*200/430);filter:drop-shadow(0 20px 34px rgba(0,0,0,.6));animation:sway 4.2s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(-3.5deg) translateY(-12px)}}
+.scroll-tip{margin-top:46px;color:rgba(255,220,170,.9);font-size:16px;letter-spacing:5px;animation:pulse 2.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+
+/* 火柴蛋糕 */
+#scene-match{background:transparent;touch-action:none}
+.matchbox{position:absolute;left:50%;top:50%;width:min(280px,68vw);aspect-ratio:260/320;transform:translate(-50%,-50%);z-index:11;pointer-events:none;filter:drop-shadow(0 30px 44px rgba(0,0,0,.75));transition:opacity .9s}
+.matchbox.gone{opacity:0}
+.strike-strip{position:absolute;left:78.5%;width:7.7%;top:10%;height:80%}
+.strike-hint{position:absolute;left:50%;top:20%;transform:translateX(-50%);z-index:14;color:#ffe9c4;font-size:clamp(13px,3.4vw,16px);letter-spacing:3px;white-space:nowrap;padding:9px 18px;border-radius:999px;background:rgba(20,18,30,.72);border:1px solid rgba(255,215,140,.35);opacity:0;transition:.8s;pointer-events:none}
+.strike-hint.show{opacity:1}
+#match{position:absolute;left:50%;top:60%;width:10px;height:150px;margin:-75px 0 0 -5px;z-index:12;will-change:transform}
+.match-stick{position:absolute;left:0;top:34px;width:10px;height:116px;border-radius:5px;background:linear-gradient(90deg,#a5713c,#e2bd84 45%,#7c5427);box-shadow:0 3px 8px rgba(0,0,0,.5)}
+.match-head{position:absolute;left:-6px;top:14px;width:22px;height:32px;border-radius:48% 48% 46% 46%/58% 58% 42% 42%;background:radial-gradient(circle at 35% 28%,#ff8d6e,#d04a3a 38%,#7e1f18);box-shadow:0 2px 8px rgba(0,0,0,.45)}
+.match-flame{position:absolute;left:-15px;top:-32px;width:30px;height:48px;transform-origin:50% 100%;transform:scale(0);transition:transform .35s cubic-bezier(.2,1.7,.4,1)}
+.match-flame .core{position:absolute;inset:0;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:radial-gradient(circle at 50% 76%,#fffafc,#ffe2f0 24%,#ffb8d8 46%,#ff8fc0 62%,rgba(255,130,180,0) 82%);filter:drop-shadow(0 0 14px rgba(255,200,225,.95)) drop-shadow(0 0 34px rgba(255,150,200,.62));animation:flameFlick .17s infinite alternate}
+.match-flame.lit{transform:scale(1)}
+@keyframes flameFlick{0%{transform:translateX(-1px) scaleY(1)}33%{transform:translateX(1px) scaleY(1.06)}66%{transform:translateX(0) scaleY(.96)}100%{transform:translateX(-1px) scaleY(1.04)}}
+#lightPool{position:absolute;left:50%;top:55%;width:110vmin;height:110vmin;border-radius:50%;z-index:11;background:radial-gradient(circle,rgba(255,230,242,.35),rgba(255,160,210,.1) 42%,transparent 88%);filter:blur(14px);mix-blend-mode:screen;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.5);transition:.5s}
+#cake{position:absolute;left:50%;bottom:4%;width:min(400px,92vw);height:540px;z-index:10;opacity:0;--sc:1;transform-origin:50% 100%;transform:translateX(-50%) translateY(50px) scale(var(--sc));transition:opacity 1.6s,transform 1.6s;pointer-events:none}
+#cake.show{opacity:1;transform:translateX(-50%) translateY(0) scale(var(--sc))}
+@media (max-height:820px){#cake{--sc:.9}}
+@media (max-height:700px){#cake{--sc:.78}}
+#cake::after{content:'';position:absolute;left:0;right:0;bottom:-16px;height:36px;border-radius:50%;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.9),transparent 76%);filter:blur(9px);z-index:-1}
+.cake-stand{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:378px;height:56px}
+.stand-disc{position:absolute;bottom:0;left:0;right:0;height:22px;border-radius:50%;background:radial-gradient(ellipse at 50% 26%,rgba(255,255,255,.9) 0%,transparent 62%),linear-gradient(180deg,#fbfbfd,#e2e2ec 42%,#b6b6c4 78%,#888 96%);box-shadow:0 24px 40px rgba(0,0,0,.72),inset 0 2px 3px rgba(255,255,255,.95)}
+.stand-slate{position:absolute;bottom:14px;left:2%;right:2%;height:30px;border-radius:50%;background:linear-gradient(180deg,#2a2a36,#161620 46%,#09090f 88%,#030306);box-shadow:inset 0 -8px 14px rgba(0,0,0,.85),0 10px 20px rgba(0,0,0,.7)}
+.cyl{position:absolute;inset:0}
+.cyl-cap{position:absolute;left:0;right:0;top:0;border-radius:50%;z-index:2}
+.cyl-body{position:absolute;left:0;right:0;z-index:1;overflow:hidden}
+.cyl-texture{position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay}
+.layer-bottom{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);width:300px;height:150px}
+.layer-bottom .cyl-cap{height:28px;background:radial-gradient(ellipse at 50% 45%,#4a4a60,#303040 22%,#1c1c2a 48%,#0e0e16 74%,#05050a 94%,#020204)}
+.layer-bottom .cyl-body{top:14px;bottom:0;background:linear-gradient(90deg,#020204,#05050a 5%,#0d0d15 12%,#1a1a26 22%,#28283a 32%,#333348 42%,#38384e 48%,#38384e 52%,#333348 58%,#28283a 68%,#1a1a26 78%,#0d0d15 88%,#05050a 95%,#020204);box-shadow:inset 0 -30px 44px rgba(0,0,0,.78),0 20px 32px rgba(0,0,0,.75)}
+.layer-bottom .cyl-texture{opacity:.7;background-image:repeating-linear-gradient(74deg,rgba(255,255,255,.045) 0 1.5px,transparent 1.5px 5.5px),repeating-linear-gradient(-22deg,rgba(0,0,0,.2) 0 1px,transparent 1px 7px)}
+.layer-top{position:absolute;left:50%;bottom:176px;transform:translateX(-50%);width:220px;height:130px}
+.layer-top .cyl-cap{height:24px;background:radial-gradient(ellipse at 50% 34%,rgba(255,255,255,.95),#fdf6e6 22%,#f0e4d0 42%,#ddceb6 68%,#c2b096 88%,#a8947a);box-shadow:inset 0 3px 6px rgba(255,255,255,.9)}
+.layer-top .cyl-body{top:12px;bottom:0;background:linear-gradient(90deg,#b4a690,#cec0aa 6%,#e2d4be 14%,#f2e6d0 24%,#fbf0da 34%,#fff9e8 44%,#fffcf0 50%,#fdf6e2 56%,#f0e4ce 66%,#e0d2b8 76%,#c8b8a0 86%,#b0a088 94%,#98866e);box-shadow:inset 0 -22px 30px rgba(150,130,110,.4),0 22px 34px rgba(0,0,0,.6)}
+.layer-top .cyl-texture{opacity:.55;mix-blend-mode:soft-light;background-image:repeating-linear-gradient(93deg,rgba(255,255,255,.9) 0 1px,rgba(180,168,150,.24) 1px 3px,rgba(255,255,255,.65) 3px 5px)}
+.ring-pearls{position:absolute;left:-2%;right:-2%;height:16px;z-index:5;pointer-events:none;background-image:radial-gradient(circle at 4.8px 4.4px,#ffffff 0 1.8px,rgba(255,246,228,.95) 1.8px 2.8px,rgba(190,168,148,.5) 2.8px 3.8px,rgba(120,95,75,.3) 3.8px 4.6px,transparent 4.6px),radial-gradient(circle at 7.6px 10.4px,rgba(60,40,28,.5) 0 1.6px,transparent 2.4px);background-size:15px 16px;background-repeat:repeat-x;background-position:center 0,center 4px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.55));-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 10%,#000 90%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0%,#000 10%,#000 90%,transparent 100%)}
+.ring-bottom{bottom:-8px}
+.ring-top{bottom:-8px;background-size:13px 16px}
+.medallion{position:absolute;left:50%;transform:translateX(-50%);aspect-ratio:100/124;z-index:6;filter:drop-shadow(0 10px 16px rgba(0,0,0,.6))}
+.medallion-lg{top:36px;width:76px}
+.medallion-sm{top:26px;width:60px}
+.bow{position:absolute;width:92px;height:150px;bottom:-96px;z-index:7;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55));pointer-events:none}
+.bow-l{left:-12%}
+.bow-r{right:-12%;transform:scaleX(-1)}
+.candelabra{--u:calc(min(230px,60vw,26vh)/220);position:absolute;left:50%;bottom:290px;transform:translateX(-50%);width:calc(220*var(--u));height:calc(180*var(--u));z-index:8}
+.candelabra svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.candelabra::after{content:'';position:absolute;left:16%;right:16%;bottom:-6px;height:16px;border-radius:50%;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.65),transparent 68%);filter:blur(3px);z-index:-1}
+.candles{position:absolute;inset:0}
+.candle{position:absolute;width:calc(9*var(--u));height:calc(var(--h)*var(--u));left:calc(var(--x)*var(--u));bottom:calc(var(--y)*var(--u));margin-left:calc(-4.5*var(--u));border-radius:calc(3*var(--u));background:repeating-linear-gradient(115deg,rgba(255,255,255,.95) 0 calc(1.6*var(--u)),rgba(212,203,188,.55) calc(1.6*var(--u)) calc(3.2*var(--u))),linear-gradient(90deg,#d6cebf,#f4ece0 30%,#fffdf8 50%,#ece4d5 70%,#cfc5b3)}
+.candle::before{content:'';position:absolute;left:-6%;right:-6%;top:-18%;height:24%;border-radius:50%;background:radial-gradient(ellipse at 50% 60%,rgba(255,255,255,.95),rgba(240,232,216,.55) 55%,rgba(200,190,170,.3))}
+.c1{--x:47;--y:90;--h:56}
+.c2{--x:79;--y:114;--h:68}
+.c3{--x:110;--y:134;--h:82}
+.c4{--x:141;--y:114;--h:68}
+.c5{--x:173;--y:90;--h:56}
+.wick{position:absolute;left:50%;bottom:100%;width:calc(2*var(--u));height:calc(7*var(--u));margin-left:calc(-1*var(--u));background:linear-gradient(180deg,#5a4a35,#2a2018);border-radius:calc(1*var(--u))}
+.flame{position:absolute;left:50%;bottom:calc(100% + 5*var(--u));width:calc(22*var(--u));height:calc(34*var(--u));margin-left:calc(-11*var(--u));transform-origin:50% 100%;transform:scale(0);transition:transform .35s cubic-bezier(.2,1.8,.4,1)}
+.flame .core{position:absolute;inset:0;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:radial-gradient(circle at 50% 76%,#fffff0,#ffebb4 22%,#ffc88c 42%,#ffa0b4 62%,rgba(255,140,180,0) 82%);filter:drop-shadow(0 0 calc(10*var(--u)) rgba(255,200,120,.95)) drop-shadow(0 0 calc(24*var(--u)) rgba(255,160,120,.55));animation:flameFlick .16s infinite alternate}
+.candle .flame.lit{transform:scale(1)}
+.candle .flame.out{animation:flameOut .6s both}
+@keyframes flameOut{0%{transform:scale(1)}30%{transform:scale(.72) translateX(2px) rotate(4deg)}100%{transform:scale(0)}}
+#cake .candle-light{position:absolute;left:50%;top:52%;width:130%;height:100%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse at 50% 58%,rgba(255,225,240,.26),rgba(255,150,200,.06) 52%,transparent 78%);filter:blur(12px);mix-blend-mode:screen;pointer-events:none;z-index:4;opacity:0;transition:opacity 1s}
+#cake .candle-light.on{opacity:1}
+.cake-stand,.cake-layer,.candelabra{opacity:0;transform:translateX(-50%) translateY(28px);transition:opacity 1.1s,transform 1.2s}
+.cake-layer .cyl-cap,.cake-layer .cyl-body,.cake-layer .cyl-texture{opacity:1}
+#cake.show .cake-stand,#cake.show .cake-layer,#cake.show .candelabra{opacity:1;transform:translateX(-50%) translateY(0)}
+#cake.show .cake-stand{transition-delay:0s}
+#cake.show .layer-bottom{transition-delay:.18s}
+#cake.show .ring-bottom{transition-delay:.36s}
+#cake.show .medallion-lg{transition-delay:.42s}
+#cake.show .layer-top{transition-delay:.6s}
+#cake.show .ring-top{transition-delay:.78s}
+#cake.show .medallion-sm{transition-delay:.84s}
+#cake.show .bow{transition-delay:.96s}
+#cake.show .candelabra{transition-delay:1.1s}
+.hud{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;opacity:0;pointer-events:none;transition:opacity 1.1s;z-index:20;padding-right:clamp(40px,10vw,140px)}
+.hud.show{opacity:1;pointer-events:auto}
+.hud .card{display:flex;flex-direction:row;align-items:center;gap:clamp(18px,3vw,40px);color:rgba(255,255,255,.92)}
+.hud .card p{writing-mode:vertical-rl;text-orientation:upright;font-size:clamp(18px,3.6vw,26px);letter-spacing:.35em;line-height:1.6;font-weight:100;margin:0;order:2}
+.hud .card .sub{writing-mode:vertical-rl;text-orientation:upright;font-size:clamp(12px,2.4vw,14px);letter-spacing:.3em;color:rgba(255,255,255,.6);margin:0 18px 0 0;order:2;font-weight:100}
+.hud button{writing-mode:vertical-rl;text-orientation:upright;padding:28px 12px;font-size:16px;border-radius:999px;cursor:pointer;border:1px solid rgba(255,255,255,.55);background:transparent;color:rgba(255,255,255,.9);font-weight:100;letter-spacing:.35em;order:1}
+.sparkP{position:absolute;border-radius:50%;background:#fff;box-shadow:0 0 5px 1px #e6efff,0 0 10px 2px rgba(255,220,240,.55);pointer-events:none;z-index:25}
+.pinkP{position:absolute;border-radius:50%;background:radial-gradient(circle,#fff 0%,#ffe6f2 22%,#ffb8d8 52%,rgba(255,150,200,0) 84%);box-shadow:0 0 10px 2px rgba(255,180,220,.55);pointer-events:none;z-index:25;mix-blend-mode:screen}
+.pinkP-soft{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(255,235,245,.85),rgba(255,155,205,.18) 62%,rgba(255,150,200,0) 82%);box-shadow:0 0 18px 6px rgba(255,170,210,.28);pointer-events:none;z-index:24;mix-blend-mode:screen;filter:blur(1.5px)}
+.smokeP{position:absolute;border-radius:50%;pointer-events:none;z-index:25;background:radial-gradient(circle,rgba(190,190,200,.55),rgba(150,150,160,.22) 60%,transparent 75%)}
+
+/* 最终文字页 */
+.final-lines{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(22px,4.6vh,52px);z-index:3;padding:0 8vw;text-align:center}
+.final-lines .line{opacity:0;transform:translateY(22px);color:rgba(255,255,255,.92);text-shadow:0 0 18px rgba(255,220,240,.42);letter-spacing:.18em;line-height:1.9;font-family:'STKaiti','KaiTi',serif;font-size:clamp(18px,3.2vw,28px)}
+.final-lines .line-1{font-family:Georgia,serif;font-size:clamp(13px,2vw,18px);letter-spacing:.46em;color:rgba(255,255,255,.68)}
+.final-lines .line-4{color:rgba(255,238,222,.97);text-shadow:0 0 22px rgba(255,200,220,.55),0 0 52px rgba(230,170,255,.32)}
+.scene.active .final-lines .line-1{animation:fIn 1.4s .5s both}
+.scene.active .final-lines .line-2{animation:fIn 1.4s 1.8s both}
+.scene.active .final-lines .line-3{animation:fIn 1.4s 3.2s both}
+.scene.active .final-lines .line-4{animation:fIn 1.6s 4.6s both}
+@keyframes fIn{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+.final-lines .yellow-star{margin-top:clamp(6px,2.6vh,22px);width:clamp(38px,7.5vw,72px);opacity:0;transform:translateY(16px) scale(.85);filter:drop-shadow(0 0 14px rgba(247,234,107,.65))}
+.final-lines .yellow-star svg{display:block;width:100%;height:auto}
+.scene.active .final-lines .yellow-star{animation:starPop 1.4s 6.2s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes starPop{0%{opacity:0;transform:translateY(16px) scale(.6) rotate(-12deg)}60%{opacity:1;transform:translateY(0) scale(1.08) rotate(3deg)}100%{opacity:1;transform:translateY(0) scale(1)}}
+.final-tip{position:absolute;bottom:5vh;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.55);font-size:13px;letter-spacing:4px;opacity:0;pointer-events:none;transition:opacity 1.4s;font-weight:200}
+.scene.active .final-tip{opacity:1;transition-delay:7s}
+.final-tip.ready{animation:tipReady 2.4s ease-in-out infinite}
+@keyframes tipReady{0%,100%{opacity:.5}50%{opacity:1}}
+
+/* 20颗星 */
+.stars-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:2vmin}
+.stars-svg{display:block;width:min(100vmin,100%);height:auto;overflow:visible;opacity:0;transform:scale(.96);transition:opacity 2s ease 1s,transform 2.2s ease 1s}
+#scene-stars.active .stars-svg{opacity:1;transform:scale(1)}
+.stars-svg .star{fill:#e8b3c8;cursor:pointer;transition:fill .45s,filter .45s;filter:drop-shadow(0 0 5px rgba(232,179,200,.6));pointer-events:all}
+.stars-svg .star:hover{fill:#fff0f6;filter:drop-shadow(0 0 12px #fff)}
+.stars-svg .star.visited{fill:#f7ea6b;filter:drop-shadow(0 0 12px #fff2a0) drop-shadow(0 0 26px #f7ea6b)}
+.star-counter{position:absolute;top:8vh;left:50%;transform:translateX(-50%);font-family:Georgia,serif;font-size:14px;color:rgba(255,255,255,.5);letter-spacing:4px;background:rgba(0,0,0,.3);padding:4px 16px;border-radius:20px;backdrop-filter:blur(4px);z-index:5}
+.star-counter.hide{opacity:0}
+#starGatherOverlay{position:fixed;inset:0;pointer-events:none;z-index:29}
+.gather-star{position:absolute;width:32px;height:32px;background:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,2 62,36 98,36 68,58 80,92 50,71 20,92 32,58 2,36 38,36" fill="%23f7ea6b"/></svg>') center/contain no-repeat;filter:drop-shadow(0 0 10px #f7ea6b);transform:translate(-50%,-50%);transition:left 1.2s cubic-bezier(0.4,0,0.2,1), top 1.2s cubic-bezier(0.4,0,0.2,1), transform 1.2s ease, opacity 1.2s}
+.gather-star.blink{animation:blink 1s infinite alternate}
+@keyframes blink{0%{opacity:1}100%{opacity:.4}}
+/* 天蝎座：几个关键星画成空心圆，跟参考图一致 */
+.gather-star.ring{background:none;border:2px solid #ffd9ea;border-radius:50%;filter:drop-shadow(0 0 8px rgba(255,180,215,.85))}
+#starGatherOverlay .constellation{position:absolute;inset:0;width:100%;height:100%;overflow:visible;opacity:0;animation:cFade 1.5s 1.1s both}
+#starGatherOverlay .constellation line{stroke:rgba(228,216,255,.8);stroke-width:1.7;stroke-linecap:round;filter:drop-shadow(0 0 3px rgba(200,180,255,.5))}
+@keyframes cFade{from{opacity:0}to{opacity:1}}
+/* 文案整块压到下方，别和上方聚拢的星团抢位置 */
+#starFinal{position:fixed;inset:0;opacity:0;pointer-events:none;transition:opacity 2s;z-index:28;background:radial-gradient(ellipse at 50% 38%,rgba(0,0,0,.1),rgba(0,0,0,.55) 72%);display:flex;align-items:flex-end;justify-content:center;text-align:center;padding:0 6vw clamp(44px,15vh,132px)}
+#starFinal.show{opacity:1;pointer-events:auto}
+#starFinal .text{font-family:'STKaiti','KaiTi',serif;font-size:clamp(18px,3.4vw,24px);color:#fff;letter-spacing:3px;text-shadow:0 0 20px rgba(255,220,240,.6)}
+#starFinal .park-tip{margin-top:clamp(18px,3.4vh,34px);font-family:'STKaiti','KaiTi',serif;font-size:clamp(12px,2vw,15px);letter-spacing:.26em;color:rgba(255,255,255,.62);opacity:0;transition:opacity 1s}
+#starFinal .park-tip.show{opacity:1;animation:tipBreathe 2.6s ease-in-out infinite}
+@keyframes tipBreathe{0%,100%{opacity:.55}50%{opacity:1}}
+#starCard{position:fixed;left:50%;top:50%;transform:translate(-50%,-48%) scale(.96);width:min(560px,84vw);padding:clamp(40px,6vh,64px) clamp(30px,5.5vw,60px) clamp(28px,4.5vh,44px);background:#faf3e8;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,.75);opacity:0;pointer-events:none;transition:.55s;z-index:30}
+#starCard.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+#starCard .card-index{font-family:Georgia,serif;font-size:13px;color:#a89684;letter-spacing:5px;text-align:center;margin-bottom:clamp(30px,5vh,46px)}
+#starCard .card-text{font-family:'STKaiti','KaiTi',serif;font-size:var(--cf,clamp(18px,3.8vw,25px));color:#3a3028;line-height:1.95;letter-spacing:2.5px;text-align:center;margin-bottom:clamp(32px,5.5vh,52px);white-space:nowrap}
+#starCard .card-close{text-align:center;font-family:'STKaiti','KaiTi',serif;font-size:13px;color:#a89684;letter-spacing:6px;cursor:pointer}
+/* =============================================================
+   星光木语 · 生日信  |  附加场景样式：接电话
+   ------------------------------------------------------------
+   伞下心事那一幕的样式已经整体搬到 src/umbrella/umbrella3d.css，
+   由 merge-birthday.ps1 在这里之后内联（替换掉旧版 gift3d.css 的位置）。
+   这个文件现在只剩「3D 翻盖机接电话」这一幕。
+   ============================================================= */
+/* 透明底：让整页那层 canvas#sky 的黑色星空透进来，和前面几幕是同一片天。
+   内嵌的 3D 机身那边也开了 alpha，穹顶不画，两边一叠加才是完整的星空。 */
+#scene-call{background:transparent}
+.call-stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+
+/* ---- 3D 翻盖机（整份 MAGIC DUO 以 base64 内嵌，运行时 blob: URL） ---- */
+.phone-wrap{position:absolute;inset:0;overflow:hidden}
+.phone-frame{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;opacity:0;
+  transition:opacity .8s ease}
+.phone-frame.on{opacity:1}
+/* 加载失败时才露出来的兜底 */
+.phone-fallback{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:none;
+  flex-direction:column;align-items:center;gap:10px;text-align:center}
+.phone-fallback b{font-family:'STKaiti','KaiTi',serif;font-size:clamp(15px,3vw,19px);letter-spacing:.16em;color:#ffd9ef}
+.phone-fallback span{font-size:clamp(11px,2vw,13px);letter-spacing:.12em;color:rgba(255,214,238,.55)}
+.phone-wrap.failed .phone-fallback{display:flex}
+.phone-wrap.failed .call-tip{display:none}
+
+/* 合盖来电：震动由 3D 场景里的机身自己做，父页不抖整幅画面 */
+.call-closed{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:flex-end;
+  padding-bottom:clamp(26px,7vh,64px);gap:clamp(14px,2.4vh,22px);pointer-events:none;z-index:3}
+.call-closed.on{display:flex}
+
+.call-badge{display:inline-flex;align-items:center;gap:.55em;padding:.44em 1.15em;border-radius:999px;
+  font-family:'STKaiti','KaiTi',serif;font-size:clamp(12px,2.3vw,15px);letter-spacing:.2em;color:#ffe6f7;
+  background:linear-gradient(160deg,rgba(255,190,226,.26),rgba(198,140,255,.20));
+  border:1px solid rgba(255,206,235,.34);
+  box-shadow:0 10px 30px rgba(20,4,30,.5),inset 0 1px 0 rgba(255,255,255,.35);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  animation:badgePop .6s cubic-bezier(.2,1.2,.4,1) both}
+.call-badge i{width:.52em;height:.52em;border-radius:50%;background:#ff9ecb;
+  box-shadow:0 0 10px #ff9ecb;animation:badgeBlink 1.1s ease-in-out infinite}
+@keyframes badgePop{from{opacity:0;transform:translateY(10px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes badgeBlink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.82)}}
+
+.call-tip{font-family:'STKaiti','KaiTi',serif;font-size:clamp(13px,2.4vw,17px);letter-spacing:.2em;
+  color:rgba(255,220,240,.78);animation:hintFloat 2.4s ease-in-out infinite;text-align:center;
+  text-shadow:0 2px 12px rgba(10,2,18,.9)}
+
+/* 开盖来电：按钮分置在 3D 机身左右两侧的空档里，像来电界面那样。
+   整层不吃点击，否则会把底下 3D 机身的「翻盖」交互挡掉。 */
+.call-open{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 clamp(10px,5vw,54px);z-index:3;pointer-events:none}
+.call-open.on{display:flex}
+.call-open .call-actions{pointer-events:auto}
+
+/* 手势提示卡：贴在 3D 机身底部那行状态文字的位置上（原来浮在机身中间，正好压住机身）。
+   坐标由 3D 手机那边报过来（'hintslot'：它那行字的下沿离视口底边多少像素），
+   下面的 bottom 是还没收到坐标时的兜底值。 */
+.call-gesture{display:none;position:absolute;left:50%;transform:translateX(-50%);
+  bottom:51px;width:max-content;max-width:92vw;margin:0;padding:.52em 1.25em;border-radius:999px;
+  font-size:clamp(10px,1.9vw,12.5px);letter-spacing:.16em;line-height:1.5;text-align:center;
+  color:rgba(255,226,246,.74);background:rgba(0,0,0,.30);border:1px solid rgba(255,214,238,.16);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  text-shadow:0 2px 10px rgba(10,2,18,.9)}
+.call-gesture.on{display:block;animation:hintFloat 2.4s ease-in-out infinite}
+
+/* 接听 / 拒接：撑满整行往两边推，避免叠在机身上 */
+.call-actions{display:flex;width:100%;justify-content:space-between;align-items:center}
+.call-btn{display:flex;flex-direction:column;align-items:center;gap:7px;border:0;background:none;cursor:pointer;
+  font-family:inherit;opacity:0;animation:rwIn .6s .5s both}
+.call-btn i{width:clamp(48px,12vw,62px);aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(17px,4vw,22px);font-style:normal;color:#fff;transition:transform .25s,box-shadow .25s}
+.call-btn span{font-size:clamp(10px,2vw,12px);letter-spacing:.2em;color:rgba(255,220,240,.78)}
+.call-ico{width:56%;height:56%;display:block}
+.call-btn.decline i{background:linear-gradient(180deg,#ff8a8a,#e0433f);box-shadow:0 10px 22px rgba(224,67,63,.42)}
+.call-btn.accept i{background:linear-gradient(180deg,#7ce8a4,#28b866);box-shadow:0 10px 22px rgba(40,184,102,.42);
+  animation:acceptPulse 1.5s ease-in-out infinite}
+@keyframes acceptPulse{0%,100%{box-shadow:0 10px 22px rgba(40,184,102,.42),0 0 0 0 rgba(40,184,102,.4)}
+  50%{box-shadow:0 10px 22px rgba(40,184,102,.42),0 0 0 13px rgba(40,184,102,0)}}
+.call-btn:hover i{transform:scale(1.1)}
+.call-btn:active i{transform:scale(.94)}
+
+/* 通话中：半透明罩在 3D 机身上，机身的光还透得出来 */
+.call-talking{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;
+  padding:clamp(30px,8vh,80px) 6vw;gap:clamp(8px,1.6vh,14px);z-index:4;
+  background:radial-gradient(ellipse at 50% 46%,rgba(28,10,38,.80),rgba(4,1,8,.94));
+  backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
+.call-talking.on{display:flex;animation:rwIn .7s both}
+.talking-avatar{width:clamp(74px,19vw,108px);aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:'STKaiti','KaiTi',serif;font-size:clamp(30px,8vw,46px);color:#fff;
+  background:radial-gradient(circle at 36% 30%,#ffb3d6,#f266ab 58%,#cf3d86);
+  box-shadow:0 14px 30px rgba(200,60,130,.4),0 0 0 4px rgba(255,255,255,.6)}
+.talking-name{font-family:'STKaiti','KaiTi',serif;font-size:clamp(18px,4vw,26px);letter-spacing:.2em;color:#fff}
+.talking-time{font-family:Georgia,serif;font-size:clamp(12px,2.4vw,16px);letter-spacing:.24em;color:rgba(255,200,225,.66)}
+/* 消息多了、屏幕又矮的时候，这一块自己滚，底下那条「语音消息」才不会被裁掉。
+   safe center：装得下就居中（老样子），装不下就顶到最上面，下面可以往下滚。
+   min-height:0：不加的话 flex 子项不肯缩，滚动条不会出来。 */
+.talking-msgs{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;justify-content:safe center;
+  gap:clamp(8px,1.6vh,14px);width:100%;max-width:440px;margin-top:clamp(8px,2vh,18px);
+  overflow-y:auto;scrollbar-width:thin}
+.tmsg{max-width:86%;padding:11px 17px;border-radius:16px;font-family:'STKaiti','KaiTi',serif;
+  font-size:clamp(12px,2.3vw,16px);line-height:1.8;letter-spacing:.08em;
+  opacity:0;transform:translateY(14px);animation:tmsgIn .7s cubic-bezier(.3,1.4,.5,1) both}
+@keyframes tmsgIn{to{opacity:1;transform:none}}
+.tmsg.them{align-self:flex-start;background:rgba(255,255,255,.94);color:#4b3548;border-bottom-left-radius:5px;
+  box-shadow:0 8px 20px rgba(0,0,0,.32)}
+.tmsg.me{align-self:flex-end;background:linear-gradient(150deg,#ff9dcb,#ec5aa4);color:#fff;border-bottom-right-radius:5px;
+  box-shadow:0 8px 20px rgba(200,60,130,.3)}
+
+/* 语音气泡：文字版说完之后，对方发来一条录好的原声。
+   [▶] + 波形 + 时长；正在放的时候 ▶ 会跳一下，波形会动。 */
+.tmsg.voice{align-self:flex-start;display:flex;align-items:center;gap:11px;padding:10px 16px 10px 12px;
+  background:rgba(255,255,255,.94);color:#4b3548;border-bottom-left-radius:5px;box-shadow:0 8px 20px rgba(0,0,0,.32)}
+.voice-btn{display:flex;align-items:center;gap:10px;padding:0;border:0;background:none;cursor:pointer;
+  font-family:inherit;color:inherit}
+.voice-ico{width:26px;height:26px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:#fff;background:linear-gradient(160deg,#ff9dcb,#ec5aa4);box-shadow:0 4px 10px rgba(200,60,130,.35)}
+.tmsg.voice.playing .voice-ico{animation:voicePulse 1.1s ease-in-out infinite}
+@keyframes voicePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
+.voice-wave{display:flex;align-items:flex-end;gap:3px;height:20px}
+.voice-wave i{display:block;width:3px;height:6px;border-radius:2px;background:rgba(214,86,150,.72)}
+.tmsg.voice.playing .voice-wave i{animation:voiceBar .9s ease-in-out infinite}
+.voice-wave i:nth-child(2){animation-delay:.12s}
+.voice-wave i:nth-child(3){animation-delay:.24s}
+.voice-wave i:nth-child(4){animation-delay:.36s}
+.voice-wave i:nth-child(5){animation-delay:.48s}
+@keyframes voiceBar{0%,100%{height:6px}50%{height:19px}}
+.voice-len{font-family:Georgia,serif;font-size:12px;letter-spacing:.08em;color:rgba(90,60,85,.72);min-width:26px}
+/* 气泡右边那句小字：平时「语音消息」，被浏览器挡住自动播的时候改成「点一下听」 */
+.voice-hint{font-size:12px;letter-spacing:.06em;color:rgba(90,60,85,.55);white-space:nowrap}
+.tmsg.voice.need-tap .voice-hint{color:#d1308c;font-weight:600}
+/* 自动播被浏览器挡了：▶ 外面套一圈提示，让人知道要点一下 */
+.tmsg.voice.need-tap .voice-ico{animation:voiceRing 1.5s ease-out infinite}
+@keyframes voiceRing{0%{box-shadow:0 0 0 0 rgba(236,90,164,.55)}70%{box-shadow:0 0 0 11px rgba(236,90,164,0)}
+  100%{box-shadow:0 0 0 0 rgba(236,90,164,0)}}
+.talking-hangup{margin-top:clamp(12px,3vh,26px);padding:11px 34px;border-radius:999px;border:0;cursor:pointer;
+  font-family:inherit;font-size:clamp(12px,1.9vw,14px);letter-spacing:.3em;color:#fff;
+  background:linear-gradient(180deg,#ff8a8a,#d93b37);box-shadow:0 10px 24px rgba(217,59,55,.4);
+  transition:transform .25s,box-shadow .25s}
+.talking-hangup:hover{transform:scale(1.06);box-shadow:0 14px 30px rgba(217,59,55,.5)}
+
+/* 结束语 */
+.call-end{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(18px,3.6vh,34px);text-align:center;padding:0 8vw;
+  background:radial-gradient(ellipse at 50% 46%,rgba(30,12,36,.97),rgba(3,1,6,.995));
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  opacity:0;visibility:hidden;transition:opacity 1.3s ease,visibility 1.3s}
+.call-end.show{opacity:1;visibility:visible}
+.call-end-line{font-family:'STKaiti','KaiTi',serif;font-size:clamp(17px,3.4vw,27px);line-height:2.1;letter-spacing:.2em;
+  color:#fff;text-shadow:0 0 24px rgba(255,190,225,.55);opacity:0;transform:translateY(20px)}
+.call-end.show .call-end-line{animation:endIn 1.6s both}
+@keyframes endIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.call-end-replay{margin-top:clamp(6px,2vh,16px);padding:11px 28px;border-radius:999px;
+  border:1px solid rgba(255,205,232,.3);background:rgba(30,20,36,.5);color:rgba(255,236,246,.9);
+  font-family:inherit;font-size:clamp(11px,1.8vw,13px);letter-spacing:.24em;cursor:pointer;
+  opacity:0;animation:endIn 1.2s 3s both;transition:background .4s}
+.call-end-replay:hover{background:rgba(255,190,225,.15)}
+/* 「从头再来一遍」：比上面那颗低调一档，放第二行 */
+.call-end-again{margin-top:0;padding:10px 26px;border-radius:999px;
+  border:1px solid rgba(255,205,232,.18);background:transparent;color:rgba(255,226,240,.6);
+  font-family:inherit;font-size:clamp(10px,1.7vw,12px);letter-spacing:.24em;cursor:pointer;
+  opacity:0;animation:endIn 1.2s 3.3s both;transition:background .4s,color .4s,border-color .4s}
+.call-end-again:hover{border-color:rgba(255,190,225,.42);background:rgba(255,190,225,.1);color:rgba(255,240,248,.95)}
+
+/* ---- 双击打开（file://）时的提示条：摄像头没权限，给一条能点的出路 ---- */
+/* z-index 要压过 .call-end(50) 和 #loading(60)：
+   通话结束那层是整屏不透明的遮罩，层级比它低的话横幅就「在 DOM 里但看不见」。 */
+.serve-hint{position:fixed;left:14px;top:14px;z-index:90;width:min(360px,86vw);
+  display:flex;flex-direction:column;gap:8px;padding:13px 15px;border-radius:14px;text-align:left;
+  background:linear-gradient(160deg,rgba(40,14,46,.93),rgba(18,6,26,.95));
+  border:1px solid rgba(255,180,220,.34);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  box-shadow:0 16px 40px rgba(0,0,0,.55);animation:serveIn .6s .35s both}
+@keyframes serveIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:none}}
+.serve-hint b{font-family:'STKaiti','KaiTi',serif;font-size:13px;letter-spacing:.08em;
+  color:#ffd9ef;font-weight:600;padding-right:22px}
+.serve-hint span{display:block;font-size:11.5px;line-height:1.7;color:rgba(255,224,244,.74)}
+.serve-hint-go{display:block;padding:8px 12px;border-radius:10px;text-decoration:none;word-break:break-all;
+  font-size:11.5px;line-height:1.5;letter-spacing:.02em;color:#2a0f22;
+  background:linear-gradient(160deg,#ffc2e2,#ff9ecb);box-shadow:0 6px 16px rgba(255,158,203,.32);
+  transition:filter .2s}
+.serve-hint-go:hover{filter:brightness(1.07)}
+.serve-hint-tip{font-size:10.5px;line-height:1.65;color:rgba(255,214,238,.52)}
+.serve-hint-x{position:absolute;right:8px;top:7px;width:22px;height:22px;border:0;border-radius:50%;
+  background:transparent;color:rgba(255,220,240,.6);font-size:13px;cursor:pointer;line-height:1;
+  font-family:inherit}
+.serve-hint-x:hover{background:rgba(255,190,225,.16);color:#fff}
+
+@media (max-width:520px){
+  .gift-stage{padding-bottom:clamp(152px,23vh,200px)}
+}
+
+/* =============================================================
+   背景音乐 · Sweet (feat. Landon Sears) — Bren Joy / Landon Sears
+   ------------------------------------------------------------
+   一个小小的 ♪ 开关，固定在左上角 —— 整封信的每一幕都在，
+   不会挡到任何控件（密码门 / 星图 / 游乐园 / 翻盖机都空着左上角）。
+   没开始放的时候音符会轻轻呼吸，提示「这里可以点」；
+   放起来了就常亮；被手动关掉时划一道斜杠。
+   ============================================================= */
+#bgmBtn{position:fixed;left:clamp(10px,2.2vw,22px);top:clamp(10px,2.2vw,22px);z-index:60;
+  width:clamp(32px,4.2vw,38px);height:clamp(32px,4.2vw,38px);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;padding:0;margin:0;
+  border:1px solid rgba(255,205,232,.24);background:rgba(22,14,28,.44);
+  color:rgba(255,226,240,.78);font-size:clamp(14px,1.9vw,16px);line-height:1;
+  font-family:inherit;cursor:pointer;user-select:none;-webkit-user-select:none;
+  backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+  transition:opacity .5s,transform .35s,background .35s,border-color .35s,color .35s}
+#bgmBtn.idle{opacity:.5;animation:bgmBreathe 2.9s ease-in-out infinite}
+#bgmBtn.on{opacity:1;background:rgba(255,190,225,.13);border-color:rgba(255,205,232,.5);color:#fff}
+#bgmBtn.off{opacity:.4;color:rgba(255,226,240,.42);border-color:rgba(255,205,232,.13)}
+#bgmBtn:hover{opacity:1;background:rgba(255,190,225,.18);border-color:rgba(255,205,232,.62);color:#fff}
+#bgmBtn.off:hover{opacity:.72}
+#bgmBtn:active{transform:scale(.92)}
+@keyframes bgmBreathe{0%,100%{opacity:.44}50%{opacity:.92}}
+/* 静音斜杠：position:fixed 的父级就是 ::after 的包含块 */
+#bgmBtn.off::after{content:'';position:absolute;left:50%;top:50%;width:58%;height:1.5px;
+  background:rgba(255,150,180,.92);border-radius:2px;transform:translate(-50%,-50%) rotate(-45deg)}
+
+/* 提示条：自动播放被拦、或者刚开播时认一下这首歌 */
+#bgmHint{position:fixed;left:clamp(10px,2.2vw,22px);
+  top:calc(clamp(10px,2.2vw,22px) + clamp(32px,4.2vw,38px) + 9px);z-index:60;
+  padding:7px 14px;border-radius:999px;white-space:nowrap;pointer-events:none;
+  background:rgba(20,12,26,.82);border:1px solid rgba(255,205,232,.22);
+  color:rgba(255,226,240,.88);font-size:clamp(11px,1.7vw,12.5px);letter-spacing:.1em;
+  font-family:inherit;opacity:0;transform:translateY(-6px);
+  transition:opacity .45s,transform .45s}
+#bgmHint.show{opacity:1;transform:none}
+
+/* ============================================================
+   游乐园（20 颗星之后）
+   ============================================================ */
+#scene-park{background:transparent}
+.park-stage{position:absolute;inset:0;overflow:hidden}
+#parkFrame{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#05030a;opacity:0;transition:opacity 1.6s cubic-bezier(.45,.05,.35,1)}
+#parkFrame.on{opacity:1}
+.park-vignette{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse at 50% 46%,transparent 44%,rgba(3,2,8,.46) 94%)}
+/* 开场幕透出整页的星空底：只压一层暗角，不能糊成一块死黑 */
+.park-intro{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(14px,2.4vh,26px);padding:0 8vw;text-align:center;background:radial-gradient(ellipse at 50% 48%,rgba(5,3,11,.52),rgba(2,1,6,.88));transition:opacity 1.3s ease,visibility 1.3s}
+.park-intro.hide{opacity:0;visibility:hidden;pointer-events:none}
+.park-kicker{font-family:Georgia,serif;font-size:clamp(10px,1.6vw,13px);letter-spacing:.52em;text-indent:.52em;color:rgba(255,214,236,.6);opacity:0;transform:translateY(10px)}
+.park-title{margin:0;font-family:'STKaiti','KaiTi',serif;font-weight:400;font-size:clamp(24px,5.2vw,44px);letter-spacing:.2em;text-indent:.2em;color:#fff;text-shadow:0 0 22px rgba(255,190,225,.6);opacity:0;transform:translateY(14px)}
+.park-sub{margin:0;font-family:'STKaiti','KaiTi',serif;font-size:clamp(14px,2.5vw,19px);line-height:2.1;letter-spacing:.16em;color:rgba(255,238,246,.82);opacity:0;transform:translateY(14px)}
+.park-enter{margin-top:clamp(8px,1.6vh,18px);padding:11px 30px;border-radius:999px;border:1px solid rgba(255,205,232,.34);background:rgba(28,18,34,.42);color:#fce8f0;font-family:inherit;font-size:clamp(12px,1.9vw,15px);letter-spacing:.3em;cursor:pointer;opacity:0;transform:translateY(12px);transition:background .5s,border-color .5s,box-shadow .5s}
+.park-enter:hover{background:rgba(255,190,225,.14);border-color:rgba(255,205,232,.7);box-shadow:0 0 26px rgba(255,180,220,.34)}
+#scene-park.active .park-kicker{animation:pIn 1.1s .35s both}
+#scene-park.active .park-title{animation:pIn 1.3s .7s both}
+#scene-park.active .park-sub{animation:pIn 1.3s 1.15s both}
+#scene-park.active .park-enter{animation:pIn 1.2s 1.75s both}
+@keyframes pIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.park-nav{position:absolute;left:clamp(10px,2.2vw,28px);top:50%;transform:translateY(-50%);z-index:7;display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.park-nav button{opacity:0;visibility:hidden;transition:opacity .9s,visibility .9s,background .45s,border-color .45s,transform .25s;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.park-nav button.show{opacity:1;visibility:visible}
+.park-nav button:hover{background:rgba(255,190,225,.14);border-color:rgba(255,205,232,.6)}
+.park-nav button:active{transform:scale(.96)}
+.park-next{padding:9px 16px;border-radius:999px;border:1px solid rgba(255,205,232,.26);background:rgba(20,14,26,.5);color:rgba(255,236,246,.86);font-family:inherit;font-size:12px;letter-spacing:.2em;cursor:pointer;white-space:nowrap}
+.park-next{border-color:rgba(255,214,160,.34);color:rgba(255,240,214,.92);background:rgba(38,22,14,.5)}
+.park-next:hover{border-color:rgba(255,214,160,.72)!important;background:rgba(255,200,130,.14)!important}
+</style>
+<script src="assets/BGM_B64.0.js"></script>
+<script src="assets/BGM_B64.1.js"></script>
+<script src="assets/BGM_B64.2.js"></script>
+<script src="assets/BGM_B64.3.js"></script>
+<script src="assets/BGM_B64.4.js"></script>
+<script src="assets/BGM_B64.5.js"></script>
+<script src="assets/BGM_B64.6.js"></script>
+<script src="assets/BGM_B64.7.js"></script>
+<script src="assets/BGM_B64.8.js"></script>
+<script src="assets/BGM_B64.9.js"></script>
+<script src="assets/PHONE_B64.0.js"></script>
+<script src="assets/PHONE_B64.1.js"></script>
+<script src="assets/PHONE_B64.2.js"></script>
+<script src="assets/VOICE_B64.0.js"></script>
+<script src="assets/PARK_B64.0.js"></script>
+<script src="assets/PARK_B64.1.js"></script>
+<script src="assets/PARK_B64.2.js"></script>
+</head>
+<body>
+
+<canvas id="sky"></canvas>
+
+<!-- 密码 -->
+<section id="scene-pass" class="scene active">
+  <div class="pw-stage" id="pwStage">
+    <h1 class="pw-title">给尤家瑜的一封生日信</h1>
+    <div class="pw-line">
+      <span class="pw-label">JIA</span>
+      <div class="pw-boxes" id="pwBoxes"></div>
+      <span class="pw-label">Ten 26</span>
+    </div>
+  </div>
+  <div class="pw-hint">输入密码 you，开启你的生日惊喜</div>
+</section>
+<input id="pwInput" autocomplete="off" maxlength="3">
+
+<!-- 信纸 -->
+<section id="scene-letter" class="scene">
+  <div class="letter-stage">
+    <div class="scroll-wrap" id="scrollWrap">
+      <div class="roller roller-top">
+        <div class="roller-cap roller-cap-l"></div><div class="roller-cap roller-cap-r"></div><div class="roller-body"></div>
+      </div>
+      <div class="paper-viewport" id="paperViewport">
+        <div class="paper-surface" id="paperSurface">
+          <div class="paper-content">
+            <p class="paper-orn">❀ ✿ ❀</p>
+            <h2 class="letter-title">To：家瑜</h2>
+            <p class="letter-greet">生日快乐呀！又一年</p>
+            <p class="letter-p">只希望你做自己想做的事少忧愁，</p>
+            <p class="letter-p">一直在自己热爱的生活里奔跑平安喜乐，</p>
+            <p class="letter-p">永远伴随着你不止生日快乐，</p>
+            <p class="letter-p">希望你每一天都快乐！</p>
+            <p class="letter-p letter-p-gap">不知道该送你一份怎么样的礼物。</p>
+            <p class="letter-p">第一次做可能比较简陋不是很完善，</p>
+            <p class="letter-p">希望你能喜欢哦！</p>
+            <p class="letter-sign">婷</p>
+          </div>
+        </div>
+      </div>
+      <div class="roller roller-bottom" id="rollerBottom">
+        <div class="roll-bundle" id="rollBundle"></div>
+        <div class="roller-cap roller-cap-l"></div><div class="roller-cap roller-cap-r"></div><div class="roller-body"></div>
+      </div>
+    </div>
+    <button class="roll-btn" id="rollBtn">读完啦 · 点击屏幕卷起信封 ✨</button>
+  </div>
+</section>
+
+<!-- 卷轴 -->
+<section id="scene-scroll" class="scene">
+  <div class="scroll-wrap2" id="scrollRoll">
+    <svg class="scroll-svg" viewBox="0 0 200 430">
+      <defs>
+        <linearGradient id="scTube" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#cdbb99"/><stop offset=".14" stop-color="#efe3c9"/><stop offset=".4" stop-color="#fdf8ec"/><stop offset=".66" stop-color="#f2e8d2"/><stop offset=".86" stop-color="#d5c6a6"/><stop offset="1" stop-color="#b09d78"/></linearGradient>
+        <linearGradient id="scCap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b4529"/><stop offset=".45" stop-color="#4e3120"/><stop offset="1" stop-color="#33200f"/></linearGradient>
+        <linearGradient id="scRibbon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f9ccd7"/><stop offset=".5" stop-color="#f2b3c4"/><stop offset="1" stop-color="#e79cb1"/></linearGradient>
+      </defs>
+      <rect x="52" y="62" width="96" height="310" rx="12" fill="url(#scTube)"/>
+      <rect x="130" y="66" width="12" height="302" rx="5" fill="rgba(255,252,243,.5)"/>
+      <path d="M130 62 L130 372" stroke="rgba(120,100,70,.4)" stroke-width="1.6"/>
+      <ellipse cx="100" cy="66" rx="46" ry="12" fill="#4a2e18"/>
+      <rect x="56" y="36" width="88" height="32" rx="13" fill="url(#scCap)"/>
+      <ellipse cx="100" cy="36" rx="44" ry="12" fill="#33200f"/>
+      <ellipse cx="100" cy="364" rx="46" ry="12" fill="#4a2e18"/>
+      <rect x="56" y="362" width="88" height="32" rx="13" fill="url(#scCap)"/>
+      <ellipse cx="100" cy="394" rx="44" ry="12" fill="#33200f"/>
+      <path d="M52 206 Q100 216 148 206" fill="none" stroke="url(#scRibbon)" stroke-width="14"/>
+      <path d="M52 224 Q100 234 148 224" fill="none" stroke="url(#scRibbon)" stroke-width="14"/>
+      <path d="M94 222C88 254 84 288 76 320" fill="none" stroke="url(#scRibbon)" stroke-width="13"/>
+      <path d="M106 222C112 254 116 288 124 320" fill="none" stroke="url(#scRibbon)" stroke-width="13"/>
+      <path d="M97 210C82 186 60 178 51 190C42 202 54 219 73 219C86 219 93 214 97 211" fill="none" stroke="url(#scRibbon)" stroke-width="12.5" stroke-linecap="round"/>
+      <path d="M103 210C118 186 140 178 149 190C158 202 146 219 127 219C114 219 107 214 103 211" fill="none" stroke="url(#scRibbon)" stroke-width="12.5" stroke-linecap="round"/>
+      <ellipse cx="100" cy="213" rx="10" ry="8.5" fill="#e28ea5"/>
+    </svg>
+    <div class="scroll-tip">点一点卷轴 ✨</div>
+  </div>
+</section>
+
+<!-- 火柴蛋糕 -->
+<section id="scene-match" class="scene">
+  <div id="lightPool"></div>
+  <div class="matchbox" id="matchbox">
+    <svg viewBox="0 0 260 320">
+      <defs>
+        <linearGradient id="mbTop" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fcf2de"/><stop offset=".5" stop-color="#f4e6cb"/><stop offset="1" stop-color="#e8d4b2"/></linearGradient>
+        <linearGradient id="mbFront" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7e9ce"/><stop offset=".5" stop-color="#efdcbb"/><stop offset="1" stop-color="#dfc9a3"/></linearGradient>
+        <linearGradient id="mbSide" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dcc5a0"/><stop offset="1" stop-color="#b89a70"/></linearGradient>
+        <linearGradient id="mbStrip" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a322b"/><stop offset=".35" stop-color="#181410"/><stop offset=".72" stop-color="#221c17"/><stop offset="1" stop-color="#0e0b08"/></linearGradient>
+        <radialGradient id="mbSky" cx="50%" cy="42%" r="62%"><stop offset="0" stop-color="#2e3763"/><stop offset=".6" stop-color="#171c34"/><stop offset="1" stop-color="#0a0d1c"/></radialGradient>
+        <radialGradient id="mbGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="rgba(255,222,150,.95)"/><stop offset=".42" stop-color="rgba(255,170,70,.4)"/><stop offset="1" stop-color="rgba(255,150,50,0)"/></radialGradient>
+        <linearGradient id="mbHat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8503f"/><stop offset="1" stop-color="#9c2a22"/></linearGradient>
+        <linearGradient id="mbCloak" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a8868"/><stop offset="1" stop-color="#3a4230"/></linearGradient>
+        <clipPath id="mbClipOval"><ellipse cx="120" cy="196" rx="62" ry="72"/></clipPath>
+      </defs>
+      <path d="M30 52 L56 30 L226 30 L200 52 Z" fill="url(#mbTop)"/>
+      <path d="M200 52 L226 30 L226 268 L200 290 Z" fill="url(#mbSide)"/>
+      <rect x="30" y="52" width="170" height="238" fill="url(#mbFront)"/>
+      <text x="115" y="98" text-anchor="middle" font-family="Georgia,serif" font-size="34" font-weight="700" fill="#8e2a22">MATCH</text>
+      <ellipse cx="120" cy="196" rx="62" ry="72" fill="url(#mbSky)"/>
+      <g clip-path="url(#mbClipOval)">
+        <circle cx="154" cy="196" r="42" fill="url(#mbGlow)"/>
+        <path d="M88 248 C84 226 92 208 104 204 C109 218 109 234 104 248 Z" fill="#7d8a6a"/>
+        <path d="M100 248 C96 222 106 204 118 200 C132 196 144 206 146 224 C148 238 142 246 136 250 Z" fill="url(#mbCloak)"/>
+        <ellipse cx="112" cy="248" rx="12" ry="6" fill="#3a3226"/>
+        <ellipse cx="138" cy="250" rx="12" ry="6" fill="#3a3226"/>
+        <path d="M108 216 C108 202 116 194 126 194 C138 194 144 204 142 216 C140 229 132 235 124 235 C115 235 109 229 108 216 Z" fill="#f7f1e3"/>
+        <circle cx="126" cy="208" r="7.2" fill="#f0c9a3"/>
+        <path d="M108 202 C110 180 120 162 127 156 C134 167 142 182 144 202 C132 208 118 208 108 202 Z" fill="url(#mbHat)"/>
+        <circle cx="127" cy="154" r="6.5" fill="#fbf6ea"/>
+        <circle cx="143" cy="218" r="5" fill="#f0c9a3"/>
+        <path d="M145 218 L156 176" stroke="#e8d9b8" stroke-width="4" stroke-linecap="round"/>
+        <path d="M156 174 C151 162 158 154 159 146 C168 154 170 164 163 174 C160 178 158 177 156 174 Z" fill="#ffb347"/>
+      </g>
+      <ellipse cx="120" cy="196" rx="62" ry="72" fill="none" stroke="#8e2a22" stroke-width="4"/>
+      <path d="M204 54 L224 34 L224 266 L204 286 Z" fill="url(#mbStrip)"/>
+    </svg>
+    <div class="strike-strip" id="strikeStrip"></div>
+  </div>
+  <div class="strike-hint" id="strikeHint">按住火柴，在右侧磨砂条上上下划一划 🔥</div>
+  <div id="match">
+    <div class="match-flame" id="matchFlame"><i class="core"></i></div>
+    <div class="match-head"></div>
+    <div class="match-stick"></div>
+  </div>
+  <div id="cake">
+    <div class="candle-light" id="candleLight"></div>
+    <div class="cake-stand"><div class="stand-disc"></div><div class="stand-slate"></div></div>
+    <div class="cake-layer layer-bottom">
+      <div class="cyl"><div class="cyl-cap"></div><div class="cyl-body"><div class="cyl-texture"></div></div></div>
+      <div class="ring-pearls ring-bottom"></div>
+      <svg class="medallion medallion-lg" viewBox="0 0 100 124">
+        <defs>
+          <radialGradient id="camBgD" cx="42%" cy="28%" r="82%"><stop offset="0" stop-color="#f8dfe3"/><stop offset=".42" stop-color="#eabfcb"/><stop offset=".78" stop-color="#cb93a2"/><stop offset="1" stop-color="#a86f80"/></radialGradient>
+          <linearGradient id="camIvory" x1="0.15" y1="0" x2="0.85" y2="1"><stop offset="0" stop-color="#fffdf4"/><stop offset=".32" stop-color="#f8ead8"/><stop offset=".62" stop-color="#e9d2b8"/><stop offset="1" stop-color="#c8a68a"/></linearGradient>
+          <linearGradient id="camHairD" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4d2db"/><stop offset="1" stop-color="#b87a8e"/></linearGradient>
+          <clipPath id="camClipD"><ellipse cx="50" cy="62" rx="36" ry="49"/></clipPath>
+        </defs>
+        <ellipse cx="50" cy="62" rx="36" ry="49" fill="url(#camBgD)"/>
+        <g clip-path="url(#camClipD)">
+          <path d="M50 16.5C60 16.5 68.5 23 70.5 33.5C71.5 37.5 72 40.5 72 43.5C72 46.5 70.8 48 70.8 49.5C70.8 52 75.2 54.5 76.8 56.5C78.4 58.5 74.2 59.6 71.2 60.2C70.6 61 70.9 62 71.3 63C73.2 63.6 73.2 65.2 71.2 66.2C70.6 67.2 71.2 68.2 71.2 69.8C71.2 73 68.2 76 64.6 78C60 80.4 57.2 83.4 56.2 88.2L55.6 93C62 93 68.5 95 74.5 99.5C80.5 104 85 111 87 119L14 119C16 108 21 99 28 92C33 87 30 82 26 76C21.5 69 19.5 58 20.5 47C22 30 34 16.5 50 16.5Z" fill="url(#camIvory)"/>
+          <path d="M50 16.5C35 17 23.5 29 21.5 46C20 60 24 74 31 84C35 90 41 92 45 88C40 79 37.5 68 40.5 57C43 47 48 37.5 56 30C59.5 26.5 58 19 50 16.5Z" fill="url(#camHairD)"/>
+          <g fill="url(#camHairD)"><circle cx="24" cy="42" r="4.8"/><circle cx="23" cy="52" r="4.2"/><circle cx="25" cy="62" r="4.4"/><circle cx="29" cy="72" r="4.2"/><circle cx="34" cy="80" r="3.8"/><circle cx="41" cy="86" r="3.4"/></g>
+        </g>
+        <ellipse cx="50" cy="62" rx="40.5" ry="53.5" fill="none" stroke="#fdfcf8" stroke-width="7" stroke-linecap="round" stroke-dasharray="0.1 12.5"/>
+      </svg>
+    </div>
+    <div class="cake-layer layer-top">
+      <div class="cyl"><div class="cyl-cap"></div><div class="cyl-body"><div class="cyl-texture"></div></div></div>
+      <div class="ring-pearls ring-top"></div>
+      <svg class="medallion medallion-sm" viewBox="0 0 100 124">
+        <defs>
+          <radialGradient id="camBgW" cx="42%" cy="28%" r="82%"><stop offset="0" stop-color="#fefaf2"/><stop offset=".5" stop-color="#f2e6d4"/><stop offset=".82" stop-color="#d6c4ae"/><stop offset="1" stop-color="#b8a68e"/></radialGradient>
+          <linearGradient id="camIvoryW" x1="0.15" y1="0" x2="0.85" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".32" stop-color="#fbf4e4"/><stop offset=".62" stop-color="#eee2cb"/><stop offset="1" stop-color="#cabda8"/></linearGradient>
+          <linearGradient id="camHairW" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6e5d9"/><stop offset="1" stop-color="#bda594"/></linearGradient>
+          <clipPath id="camClipW"><ellipse cx="50" cy="62" rx="36" ry="49"/></clipPath>
+        </defs>
+        <ellipse cx="50" cy="62" rx="36" ry="49" fill="url(#camBgW)"/>
+        <g clip-path="url(#camClipW)">
+          <path d="M50 16.5C60 16.5 68.5 23 70.5 33.5C71.5 37.5 72 40.5 72 43.5C72 46.5 70.8 48 70.8 49.5C70.8 52 75.2 54.5 76.8 56.5C78.4 58.5 74.2 59.6 71.2 60.2C70.6 61 70.9 62 71.3 63C73.2 63.6 73.2 65.2 71.2 66.2C70.6 67.2 71.2 68.2 71.2 69.8C71.2 73 68.2 76 64.6 78C60 80.4 57.2 83.4 56.2 88.2L55.6 93C62 93 68.5 95 74.5 99.5C80.5 104 85 111 87 119L14 119C16 108 21 99 28 92C33 87 30 82 26 76C21.5 69 19.5 58 20.5 47C22 30 34 16.5 50 16.5Z" fill="url(#camIvoryW)"/>
+          <path d="M50 16.5C35 17 23.5 29 21.5 46C20 60 24 74 31 84C35 90 41 92 45 88C40 79 37.5 68 40.5 57C43 47 48 37.5 56 30C59.5 26.5 58 19 50 16.5Z" fill="url(#camHairW)"/>
+        </g>
+        <ellipse cx="50" cy="62" rx="40.5" ry="53.5" fill="none" stroke="#fdfcf8" stroke-width="7" stroke-linecap="round" stroke-dasharray="0.1 12.5"/>
+      </svg>
+      <svg class="bow bow-l" viewBox="0 0 120 175">
+        <defs>
+          <linearGradient id="bowPink" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd9e0"/><stop offset=".34" stop-color="#f7bccb"/><stop offset=".68" stop-color="#e29aae"/><stop offset="1" stop-color="#b96f85"/></linearGradient>
+          <linearGradient id="bowKnotG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffdde5"/><stop offset=".5" stop-color="#f0aec0"/><stop offset="1" stop-color="#c88096"/></linearGradient>
+        </defs>
+        <path d="M54 60C50 92 44 126 34 164" fill="none" stroke="url(#bowPink)" stroke-width="14" stroke-linecap="round"/>
+        <path d="M66 60C70 92 76 126 86 164" fill="none" stroke="url(#bowPink)" stroke-width="14" stroke-linecap="round"/>
+        <path d="M58 52C46 28 24 20 15 32C6 44 16 60 34 60C46 60 54 56 58 53" fill="none" stroke="url(#bowPink)" stroke-width="12" stroke-linecap="round"/>
+        <path d="M62 52C74 28 96 20 105 32C114 44 104 60 86 60C74 60 66 56 62 53" fill="none" stroke="url(#bowPink)" stroke-width="12" stroke-linecap="round"/>
+        <ellipse cx="60" cy="54" rx="9.5" ry="8" fill="url(#bowKnotG)"/>
+      </svg>
+      <svg class="bow bow-r" viewBox="0 0 120 175">
+        <path d="M54 60C50 92 44 126 34 164" fill="none" stroke="url(#bowPink)" stroke-width="14" stroke-linecap="round"/>
+        <path d="M66 60C70 92 76 126 86 164" fill="none" stroke="url(#bowPink)" stroke-width="14" stroke-linecap="round"/>
+        <path d="M58 52C46 28 24 20 15 32C6 44 16 60 34 60C46 60 54 56 58 53" fill="none" stroke="url(#bowPink)" stroke-width="12" stroke-linecap="round"/>
+        <path d="M62 52C74 28 96 20 105 32C114 44 104 60 86 60C74 60 66 56 62 53" fill="none" stroke="url(#bowPink)" stroke-width="12" stroke-linecap="round"/>
+        <ellipse cx="60" cy="54" rx="9.5" ry="8" fill="url(#bowKnotG)"/>
+      </svg>
+    </div>
+    <div class="candelabra">
+      <svg viewBox="0 0 220 180">
+        <defs>
+          <linearGradient id="silverBody" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4e4d56"/><stop offset=".12" stop-color="#9a99a5"/><stop offset=".28" stop-color="#e3e1ea"/><stop offset=".42" stop-color="#f5f4fa"/><stop offset=".56" stop-color="#d8d6e0"/><stop offset=".72" stop-color="#a5a3b0"/><stop offset=".86" stop-color="#d2d0da"/><stop offset="1" stop-color="#58565f"/></linearGradient>
+          <linearGradient id="silverArm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0eef6"/><stop offset=".36" stop-color="#c8c6d2"/><stop offset=".72" stop-color="#9897a4"/><stop offset="1" stop-color="#5e5d68"/></linearGradient>
+        </defs>
+        <ellipse cx="110" cy="168" rx="48" ry="10" fill="url(#silverBody)"/>
+        <ellipse cx="110" cy="162" rx="36" ry="8" fill="#e8e6ef"/>
+        <path d="M104 162 C104 140 106.5 116 106.5 94 L106.5 50 L113.5 50 L113.5 94 C113.5 116 116 140 116 162 Z" fill="url(#silverBody)"/>
+        <circle cx="110" cy="146" r="8" fill="url(#silverBody)"/>
+        <circle cx="110" cy="120" r="6.5" fill="url(#silverBody)"/>
+        <path d="M109 152 C 78 150 52 132 47 94" fill="none" stroke="url(#silverArm)" stroke-width="6.6" stroke-linecap="round"/>
+        <path d="M111 152 C 142 150 168 132 173 94" fill="none" stroke="url(#silverArm)" stroke-width="6.6" stroke-linecap="round"/>
+        <path d="M109 134 C 94 130 81 106 79 70" fill="none" stroke="url(#silverArm)" stroke-width="5.4" stroke-linecap="round"/>
+        <path d="M111 134 C 126 130 139 106 141 70" fill="none" stroke="url(#silverArm)" stroke-width="5.4" stroke-linecap="round"/>
+        <g>
+          <ellipse cx="47" cy="91" rx="8.5" ry="3.5" fill="url(#silverBody)"/><rect x="43.5" y="90" width="7" height="7" rx="2" fill="url(#silverBody)"/>
+          <ellipse cx="173" cy="91" rx="8.5" ry="3.5" fill="url(#silverBody)"/><rect x="169.5" y="90" width="7" height="7" rx="2" fill="url(#silverBody)"/>
+          <ellipse cx="79" cy="67" rx="8.5" ry="3.5" fill="url(#silverBody)"/><rect x="75.5" y="66" width="7" height="7" rx="2" fill="url(#silverBody)"/>
+          <ellipse cx="141" cy="67" rx="8.5" ry="3.5" fill="url(#silverBody)"/><rect x="137.5" y="66" width="7" height="7" rx="2" fill="url(#silverBody)"/>
+          <ellipse cx="110" cy="47" rx="9.5" ry="4" fill="url(#silverBody)"/><rect x="106" y="46" width="8" height="8" rx="2" fill="url(#silverBody)"/>
+        </g>
+      </svg>
+      <div class="candles" id="candles">
+        <div class="candle c1"><span class="wick"></span><div class="flame"><i class="core"></i></div></div>
+        <div class="candle c2"><span class="wick"></span><div class="flame"><i class="core"></i></div></div>
+        <div class="candle c3"><span class="wick"></span><div class="flame"><i class="core"></i></div></div>
+        <div class="candle c4"><span class="wick"></span><div class="flame"><i class="core"></i></div></div>
+        <div class="candle c5"><span class="wick"></span><div class="flame"><i class="core"></i></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="hud" id="wishUI"><div class="card"><p>✨ 闭上眼睛，许个愿吧 ✨</p><button id="wishBtn">我许好啦</button></div></div>
+  <div class="hud" id="blowUI"><div class="card"><p>许好愿啦，吹蜡烛！</p><p class="sub" id="micStatus">🎤 对麦克风吹气，或者点一下屏幕</p></div></div>
+</section>
+
+<!-- 最终文字页 -->
+<section id="scene-final" class="scene">
+  <div class="final-lines">
+    <div class="line line-1">2006.10.26</div>
+    <div class="line line-2">寻常秋日，有一个女孩降生世间。</div>
+    <div class="line line-3">转眼今日，她满二十岁。</div>
+    <div class="line line-4">我便备下二十颗星，一岁一星，予你。</div>
+    <div class="yellow-star"><svg viewBox="0 0 100 96"><polygon points="50,2 62,36 98,36 68,58 80,92 50,71 20,92 32,58 2,36 38,36" fill="#f7ea6b"/></svg></div>
+  </div>
+  <div class="final-tip" id="finalTip">轻触屏幕，点亮星星 ✦</div>
+</section>
+
+<!-- 20 颗星 -->
+<section id="scene-stars" class="scene">
+  <div class="stars-wrap">
+    <svg class="stars-svg" viewBox="0 0 1400 1000">
+      <defs><path id="starShape" d="M 0,-10 L 2.245,-3.09 L 9.51,-3.09 L 3.633,1.18 L 5.878,8.09 L 0,3.82 L -5.878,8.09 L -3.633,1.18 L -9.51,-3.09 L -2.245,-3.09 Z"/></defs>
+      <g class="stars" id="starsGroup"></g>
+    </svg>
+  </div>
+  <div class="star-counter" id="starCounter">0 / 20</div>
+</section>
+<div id="starCard"><div class="card-index"><span id="starIdx">01</span> / 20</div><div class="card-text" id="starText"></div><div class="card-close" id="starClose">关 闭</div></div>
+<div id="starFinal"><div><div class="text">20 颗星星，都送给你</div><div class="park-tip" id="parkTip">星星收齐了 · 点一下游乐园 🎡</div></div></div>
+<!-- =============================================================
+     附加场景：接电话（3D 翻盖机）
+     ------------------------------------------------------------
+     「伞下心事」整幕已经搬去 src\umbrella\umbrella-scene.html，
+     不再注入产物。
+     ============================================================= -->
+
+<!-- ============ 接电话（3D 翻盖机） ============ -->
+<section id="scene-call" class="scene">
+  <div class="call-stage">
+
+    <!-- 3D 翻盖机：整份 MAGIC DUO 以 base64 内嵌，运行时用 blob: URL 塞进 iframe，
+         所以整封信仍然是 ONE 个自包含 html，file:// 双击可开；
+         blob 继承父页 origin，摄像头 / 手势模型才拿得到
+         （data: 的 origin 不透明，iframe 里压根没有 navigator.mediaDevices） -->
+    <div class="phone-wrap" id="phoneWrap">
+      <iframe class="phone-frame" id="phoneFrame" title="MAGIC DUO · 玫粉复古翻盖机" scrolling="no"></iframe>
+      <div class="phone-fallback" id="phoneFallback">
+        <b>3D 机身没能打开</b>
+        <span>换一个浏览器再试一次就好啦</span>
+      </div>
+    </div>
+
+    <!-- 合盖：震动 + 来电 -->
+    <div class="call-closed" id="callClosed">
+      <div class="call-badge" id="callBadge"><i></i>婷 有来电</div>
+      <div class="call-tip" id="callTip">手机在震动 · 点一下接过来 ✦</div>
+    </div>
+
+    <!-- 开盖来电：机身主屏已经写着「婷来电」，这里只留操作按钮 -->
+    <div class="call-open" id="callOpen">
+      <div class="call-actions">
+        <button class="call-btn decline" id="callDecline" type="button"><i>✕</i><span>先不接</span></button>
+        <button class="call-btn accept" id="callAccept" type="button"><i><svg class="call-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.4 3.2c.8-.2 1.6.3 1.9 1.1l1.1 3c.2.6 0 1.3-.5 1.7l-1.7 1.4a13.3 13.3 0 0 0 5.4 5.4l1.4-1.7c.4-.5 1.1-.7 1.7-.5l3 1.1c.8.3 1.3 1.1 1.1 1.9l-.5 2.3c-.2.9-1 1.5-1.9 1.5C10.1 20.3 3.7 13.9 3.7 5.7c0-.9.6-1.7 1.5-1.9l2.2-.6Z"/></svg></i><span>接听</span></button>
+      </div>
+      <!-- 手势提示：只有 3D 手机那边真的把摄像头开起来了才露出来 -->
+      <div class="call-gesture" id="callGesture">✋ 张开五指 = 接听 · 握拳 = 先不接 · 捏合 CALL 键 = 接听</div>
+    </div>
+
+    <!-- 通话中 -->
+    <div class="call-talking" id="callTalking">
+      <div class="talking-avatar">婷</div>
+      <div class="talking-name">婷</div>
+      <div class="talking-time" id="talkingTime">00:00</div>
+      <div class="talking-msgs" id="talkingMsgs"></div>
+      <div class="talking-hangup" id="talkingHangup">挂 断</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- 游乐园（20 颗星之后） -->
+<section id="scene-park" class="scene">
+  <div class="park-stage">
+    <iframe id="parkFrame" title="游乐园" scrolling="no"></iframe>
+    <div class="park-vignette"></div>
+    <div class="park-nav">
+      <button class="park-next" id="parkNext" type="button">下一幕 · 接电话 ☎</button>
+    </div>
+    <div class="park-intro" id="parkIntro">
+      <div class="park-kicker">HAPPY BIRTHDAY</div>
+      <h2 class="park-title">游乐园</h2>
+      <p class="park-sub">二十颗星，是二十年的光。<br>这座游乐园，是我想和你一起去的地方。</p>
+      <button class="park-enter" id="parkEnter" type="button">推 门 进 去 ✦</button>
+    </div>
+  </div>
+</section>
+
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const easeOut=t=>1-Math.pow(1-t,3);
+const easeIn=t=>t*t;
+const easeInOutSine=t=>0.5-0.5*Math.cos(Math.PI*t);
+
+/* 音频 */
+let actx=null;
+function AC(){if(!actx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;actx=new C();}if(actx.state==='suspended')actx.resume();return actx;}
+function tone(f,dur,o){const ctx=AC();if(!ctx)return;o=o||{};const t0=ctx.currentTime+(o.when||0);const osc=ctx.createOscillator();osc.type=o.type||'sine';osc.frequency.setValueAtTime(f,t0);if(o.slide)osc.frequency.exponentialRampToValueAtTime(Math.max(30,f+o.slide),t0+dur);const g=ctx.createGain();g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(o.gain||.12,t0+(o.attack||.01));g.gain.exponentialRampToValueAtTime(.0001,t0+dur);osc.connect(g);g.connect(ctx.destination);osc.start(t0);osc.stop(t0+dur+.05);}
+function noise(o){const ctx=AC();if(!ctx)return;o=o||{};const t0=ctx.currentTime+(o.when||0);const dur=o.dur||.3;const len=Math.max(1,Math.floor(ctx.sampleRate*dur));const buf=ctx.createBuffer(1,len,ctx.sampleRate);const d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;const src=ctx.createBufferSource();src.buffer=buf;const f=ctx.createBiquadFilter();f.type=o.type||'bandpass';f.frequency.value=o.freq||1000;f.Q.value=o.q||1;const g=ctx.createGain();g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(o.gain||.15,t0+Math.min(.02,dur*.3));g.gain.exponentialRampToValueAtTime(.0001,t0+dur);src.connect(f);f.connect(g);g.connect(ctx.destination);src.start(t0);}
+function sndStrike(){noise({dur:.18,type:'highpass',freq:2800,q:.8,gain:.35});}
+function sndScrape(){noise({dur:.11,type:'highpass',freq:2400,q:.7,gain:.13});}
+function sndIgnite(){noise({dur:.5,type:'lowpass',freq:480,q:.6,gain:.22});}
+function sndCandlePop(){tone(760,.09,{gain:.1,slide:1500});}
+function sndChime(){[523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f,.5,{gain:.12,when:i*.09}));}
+function sndPaper(){noise({dur:1.1,type:'lowpass',freq:560,q:.7,gain:.11});}
+function sndBlow(){noise({dur:.7,type:'bandpass',freq:700,q:.5,gain:.3});}
+function sndMelody(){const N={G4:392,A4:440,B4:493.88,C5:523.25,D5:587.33,E5:659.25,F5:698.46,G5:783.99};const seq=[['G4',.5],['G4',.5],['A4',1],['G4',1],['C5',1],['B4',2],['G4',.5],['G4',.5],['A4',1],['G4',1],['D5',1],['C5',2],['G4',.5],['G4',.5],['G5',1],['E5',1],['C5',1],['B4',1],['A4',2],['F5',.5],['F5',.5],['E5',1],['C5',1],['D5',1],['C5',2]];let t=.15;seq.forEach(p=>{tone(N[p[0]],p[1]*.92,{type:'triangle',gain:.14,when:t,attack:.02});t+=p[1];});}
+
+/* 星空 */
+const sky=$('#sky'),sctx=sky.getContext('2d');
+let W=innerWidth,H=innerHeight,starsDeep=[],starsMid=[],meteors=[],nextMeteorAt=1600,lastSkyNow=0;
+const skyStart=performance.now();
+function makeStars(){W=innerWidth;H=innerHeight;sky.width=W;sky.height=H;
+  starsDeep=[];for(let i=0;i<Math.min(360,Math.max(140,Math.floor(W*H/9000)));i++)starsDeep.push({x:Math.random()*W,y:Math.random()*H,r:0.25+Math.random()*0.55,phase:Math.random()*Math.PI*2,period:2+Math.random(),baseA:0.14+Math.random()*0.22,hue:Math.random()<0.72?'200,210,230':'220,200,235'});
+  starsMid=[];for(let i=0;i<Math.min(140,Math.max(60,Math.floor(W*H/26000)));i++)starsMid.push({x:Math.random()*W,y:Math.random()*H,r:0.7+Math.random()*1.1,phase:Math.random()*Math.PI*2,period:2+Math.random(),baseA:0.3+Math.random()*0.35,hue:Math.random()<0.6?'255,235,220':'255,220,240'});
+}
+makeStars();
+window.addEventListener('resize',makeStars);
+function spawnMeteor(){const rad=30*Math.PI/180;const dirX=Math.cos(rad),dirY=Math.sin(rad);const startX=W*0.08+Math.random()*W*0.72;const startY=-H*0.12+Math.random()*H*0.3;const totalDist=W*1.1+Math.random()*W*0.5;const trailLen=W*(0.25+Math.random()*0.08);meteors.push({startX,startY,dirX,dirY,totalDist,duration:(1.2+Math.random()*0.6)*1000,elapsed:0,trailFrac:trailLen/totalDist,fadeOut:0,hue:320+Math.random()*30,ended:false});}
+function drawSky(now){const t=(now-skyStart)/1000;sctx.clearRect(0,0,W,H);sctx.globalCompositeOperation='lighter';
+  const deepFade=Math.min(1,t);const midFade=Math.max(0,Math.min(1,(t-0.2)/0.8));
+  for(const s of starsDeep){const wave=0.5+0.5*Math.sin((t/s.period+s.phase)*Math.PI*2);const a=s.baseA*(0.45+0.55*wave)*deepFade;if(a<=0.002)continue;sctx.fillStyle=`rgba(${s.hue}, ${a})`;sctx.beginPath();sctx.arc(s.x,s.y,s.r,0,6.2832);sctx.fill();}
+  for(const s of starsMid){const wave=0.5+0.5*Math.sin((t/s.period+s.phase)*Math.PI*2);const a=(0.3+0.55*wave)*midFade;if(a<=0.005)continue;const g=sctx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r*4);g.addColorStop(0,`rgba(${s.hue}, ${a})`);g.addColorStop(1,`rgba(${s.hue}, 0)`);sctx.fillStyle=g;sctx.beginPath();sctx.arc(s.x,s.y,s.r*4,0,6.2832);sctx.fill();}
+  const dt=Math.min(50,now-lastSkyNow);lastSkyNow=now;
+  if(now>=nextMeteorAt){spawnMeteor();nextMeteorAt=now+3500;}
+  for(let i=meteors.length-1;i>=0;i--){const m=meteors[i];
+    if(!m.ended){m.elapsed+=dt;if(m.elapsed>=m.duration){m.elapsed=m.duration;m.ended=true;}}else{m.fadeOut+=dt;if(m.fadeOut>500){meteors.splice(i,1);continue;}}
+    const prog=m.elapsed/m.duration;const eased=easeInOutSine(Math.min(1,prog));
+    const headX=m.startX+m.dirX*m.totalDist*eased;const headY=m.startY+m.dirY*m.totalDist*eased;
+    const tail=eased-Math.min(eased,m.trailFrac);const tailX=m.startX+m.dirX*m.totalDist*tail;const tailY=m.startY+m.dirY*m.totalDist*tail;
+    /* 出生就让光晕淡入，否则整颗流星会在画面左上角糊出一团紫光 */
+    const fadeA=(m.ended?Math.max(0,1-m.fadeOut/500):1)*Math.min(1,prog/0.25);
+    if(headX<-160||headX>W+160||headY>H+160){meteors.splice(i,1);continue;}
+    sctx.lineCap='round';
+    for(let s=0;s<26;s++){const p0=s/26,p1=(s+1)/26;const x0=tailX+(headX-tailX)*p0;const y0=tailY+(headY-tailY)*p0;const x1=tailX+(headX-tailX)*p1;const y1=tailY+(headY-tailY)*p1;const a0=Math.pow(p0,1.6)*0.72*fadeA;sctx.strokeStyle=`hsla(${m.hue+(1-p0)*22}, 68%, ${62+p0*28}%, ${a0})`;sctx.lineWidth=0.9+p1*4.6;sctx.beginPath();sctx.moveTo(x0,y0);sctx.lineTo(x1,y1);sctx.stroke();}
+    const hg=sctx.createRadialGradient(headX,headY,0,headX,headY,15);hg.addColorStop(0,`rgba(255,255,255,${0.95*fadeA})`);hg.addColorStop(0.3,`rgba(255,228,245,${0.6*fadeA})`);hg.addColorStop(1,'rgba(255,200,230,0)');sctx.fillStyle=hg;sctx.beginPath();sctx.arc(headX,headY,15,0,6.2832);sctx.fill();
+  }
+  sctx.globalCompositeOperation='source-over';
+}
+function skyLoop(now){drawSky(now);requestAnimationFrame(skyLoop);}
+requestAnimationFrame(skyLoop);
+
+/* 场景管理 */
+const scenes=[...document.querySelectorAll('.scene')];
+let curScene='scene-pass';
+function showScene(el){scenes.forEach(s=>s.classList.remove('active'));el.classList.add('active');curScene=el.id;}
+
+/* 密码 */
+const PW='you';
+let typed='',pwState='idle';
+const pwStage=$('#pwStage'),pwBoxesEl=$('#pwBoxes'),pwInput=$('#pwInput');
+pwBoxesEl.innerHTML='<div class="pw-box"></div>'.repeat(3);
+const boxes=[...pwBoxesEl.querySelectorAll('.pw-box')];
+boxes.forEach((b,i)=>{setTimeout(()=>{if(b.dataset.activated)return;b.dataset.activated='1';b.classList.add('activated');},3200+i*300);});
+function renderBoxes(){boxes.forEach((b,i)=>{b.textContent=typed[i]?typed[i].toUpperCase():'';b.classList.toggle('filled',!!typed[i]);});}
+function onChar(ch){if(pwState!=='idle'||typed.length>=PW.length)return;typed+=ch.toLowerCase();renderBoxes();if(typed.length===PW.length){pwState=typed===PW?'ok':'wrong';if(pwState==='ok')pwSuccess();else pwFail();}}
+function pwFail(){pwStage.classList.add('shake');boxes.forEach(b=>b.classList.add('wrong'));setTimeout(()=>{typed='';pwInput.value='';pwStage.classList.remove('shake');boxes.forEach(b=>b.classList.remove('wrong'));renderBoxes();pwState='idle';},700);}
+function pwSuccess(){pwStage.classList.add('ok');pwInput.value='';setTimeout(()=>{showScene($('#scene-letter'));onLetterEnter();},1150);}
+pwInput.addEventListener('input',()=>{if(curScene!=='scene-pass'||pwState!=='idle'){pwInput.value='';return;}const v=pwInput.value.replace(/[^a-zA-Z]/g,'');if(v.length>typed.length)onChar(v[v.length-1]);else if(v.length<typed.length){typed=typed.slice(0,v.length);renderBoxes();}});
+window.addEventListener('keydown',e=>{if(curScene==='scene-pass'&&pwState==='idle'&&/^[a-zA-Z]$/.test(e.key)&&document.activeElement!==pwInput)onChar(e.key);});
+$('#scene-pass').addEventListener('click',()=>pwInput.focus());
+pwInput.focus();
+
+/* 信纸 */
+const scrollWrap=$('#scrollWrap'),paperViewport=$('#paperViewport'),paperSurface=$('#paperSurface'),rollerBottom=$('#rollerBottom'),rollBundle=$('#rollBundle'),rollBtn=$('#rollBtn');
+let letterRolled=false;
+function onLetterEnter(){letterRolled=false;setTimeout(()=>{fitPaperToViewport();setTimeout(()=>rollBtn.classList.add('show'),700);},1300);}
+function fitPaperToViewport(){paperSurface.style.transform='none';paperSurface.style.width='100%';void paperSurface.offsetWidth;const vpH=paperViewport.clientHeight;if(paperSurface.scrollHeight<=vpH){paperSurface.style.transform='none';return;}
+/* 要迭代着算：把纸放大到 100/scale 宽之后，文字少折几行、实际高度会变矮，
+   只按 100% 宽估一次的话，底部就会留下一条永远填不满的空缺。 */
+let scale=vpH/paperSurface.scrollHeight;
+for(let i=0;i<5;i++){paperSurface.style.width=(100/scale)+'%';paperSurface.style.transform='scale('+scale+')';void paperSurface.offsetWidth;const next=vpH/paperSurface.scrollHeight;if(Math.abs(next-scale)<0.0015){scale=next;break;}scale=next;}
+paperSurface.style.width=(100/scale)+'%';paperSurface.style.transform='scale('+scale+')';}
+addEventListener('resize',()=>{if(curScene==='scene-letter'&&!letterRolled)fitPaperToViewport();});
+let pDown=null;
+paperViewport.addEventListener('pointerdown',e=>{pDown={x:e.clientX,y:e.clientY,t:performance.now()};});
+paperViewport.addEventListener('pointerup',e=>{if(!pDown)return;const dist=Math.hypot(e.clientX-pDown.x,e.clientY-pDown.y);const dur=performance.now()-pDown.t;pDown=null;if(dist<12&&dur<450)triggerRollUp();});
+rollBtn.addEventListener('click',e=>{e.stopPropagation();triggerRollUp();});
+function triggerRollUp(){if(letterRolled)return;letterRolled=true;rollBtn.classList.add('clicked');sndPaper();setTimeout(startRollUp,500);}
+function startRollUp(){const wrapH=scrollWrap.offsetHeight;const dur=2200;const t0=performance.now();function frame(now){const p=Math.min(1,(now-t0)/dur);const e=easeInOutSine(p);const paperH=Math.max(0,wrapH*(1-e));paperViewport.style.height=paperH+'px';rollerBottom.style.bottom=(wrapH-paperH-22)+'px';rollBundle.style.height=(6+e*34)+'px';if(p<1)requestAnimationFrame(frame);else showScene($('#scene-scroll'));}requestAnimationFrame(frame);}
+$('#scrollRoll').addEventListener('click',()=>{setTimeout(startMatch,200);});
+
+/* 火柴蛋糕 */
+const matchEl=$('#match'),matchFlameEl=$('#matchFlame'),boxEl=$('#matchbox'),lightPool=$('#lightPool'),cakeEl=$('#cake'),candlesEl=$('#candles'),wishUI=$('#wishUI'),wishBtn=$('#wishBtn'),blowUI=$('#blowUI'),micStatusEl=$('#micStatus');
+const candleFlames=[...candlesEl.querySelectorAll('.flame')];
+const FLAME_OFF=82,HEAD_OFF=44;
+matchEl._t={x:150,y:230,r:30,s:1};
+function applyMatch(x,y,r,s){matchEl._t={x,y,r,s};matchEl.style.transform='translate('+x+'px,'+y+'px) rotate('+r+'deg) scale('+s+')';}
+applyMatch(150,230,30,1);
+function tweenMatch(to,dur,opts){return new Promise(res=>{const o=opts||{};const ease=o.ease||easeIO,onFrame=o.onFrame;const from={x:matchEl._t.x,y:matchEl._t.y,r:matchEl._t.r,s:matchEl._t.s};const toS=(to.s===undefined)?from.s:to.s;const t0=performance.now();function f(now){const p=Math.min(1,(now-t0)/dur);const e=ease(p);applyMatch(lerp(from.x,to.x,e),lerp(from.y,to.y,e),lerp(from.r,to.r,e),lerp(from.s,toS,e));if(onFrame)onFrame(e);if(p<1)requestAnimationFrame(f);else res();}requestAnimationFrame(f);});}
+function bodyOffset(off,r,s){const rad=r*Math.PI/180;return{x:off*s*Math.sin(rad),y:-off*s*Math.cos(rad)};}
+function flameScreenPos(){const o=bodyOffset(FLAME_OFF,matchEl._t.r,matchEl._t.s);return{x:innerWidth*.5+matchEl._t.x+o.x,y:innerHeight*.6+matchEl._t.y+o.y};}
+function headScreenPos(){const o=bodyOffset(HEAD_OFF,matchEl._t.r,matchEl._t.s);return{x:innerWidth*.5+matchEl._t.x+o.x,y:innerHeight*.6+matchEl._t.y+o.y};}
+function putHeadAt(hx,hy,r,s){const o=bodyOffset(HEAD_OFF,r,s);applyMatch(hx-innerWidth*.5-o.x,hy-innerHeight*.6-o.y,r,s);}
+function poolFollow(){const fr=matchFlameEl.getBoundingClientRect();lightPool.style.transform='translate(-50%,-50%) scale(.5)';lightPool.style.left=(fr.left+fr.width/2)+'px';lightPool.style.top=(fr.top+fr.height*.6)+'px';}
+const stripEl=$('#strikeStrip'),strikeHintEl=$('#strikeHint');
+const MATCH_S=.84,MATCH_R=108,SLIDE_NEED=110;
+let strikePhase=false,ignited=false,dragging=false,dragEverStarted=false;
+let dragOff={x:0,y:0},lastPt=null,slideDist=0,lastScrapeAt=0,autoTimer=null;
+function sparkAt(x,y){const n=2+(Math.random()*3|0);for(let i=0;i<n;i++){const a=-Math.PI/2+(Math.random()-.5)*2.4;const sp=1.1+Math.random()*3.6;spawnPart(x+(Math.random()-.5)*10,y+(Math.random()-.5)*4,{cls:'sparkP',size:1.2+Math.random()*1.8,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-.4,g:.12,max:260+Math.random()*280});}}
+function onStrip(x,y){const s=stripEl.getBoundingClientRect();const padX=16,padY=26;return x>s.left-padX&&x<s.right+padX&&y>s.top-padY&&y<s.bottom+padY;}
+function scrape(hx,hy){if(!onStrip(hx,hy)){lastPt=null;return;}if(lastPt){const d=Math.hypot(hx-lastPt.x,hy-lastPt.y);if(d>1.2){slideDist+=d;if(Math.random()<.6)sparkAt(hx,hy);const now=performance.now();if(now-lastScrapeAt>95){lastScrapeAt=now;sndScrape();}}}lastPt={x:hx,y:hy};if(slideDist>SLIDE_NEED)igniteMatch();}
+function igniteMatch(){if(ignited||!strikePhase)return;strikePhase=false;ignited=true;dragging=false;clearTimeout(autoTimer);strikeHintEl.classList.remove('show');matchEl.classList.remove('hint');sndStrike();sndIgnite();matchFlameEl.classList.add('lit');lightPool.classList.add('following');lightPool.style.opacity='.9';poolFollow();startPinkMotes();afterIgnite();}
+async function afterIgnite(){
+  await sleep(420);
+  const h=headScreenPos();const o=bodyOffset(HEAD_OFF,36,MATCH_S);
+  await tweenMatch({x:h.x-innerWidth*.5-o.x,y:(h.y-40)-innerHeight*.6-o.y,r:36},620,{ease:easeIO,onFrame:poolFollow});
+  await sleep(260);boxEl.classList.add('gone');
+  await tweenMatch({x:0,y:-40,r:40,s:1},760,{ease:easeIO,onFrame:poolFollow});
+  revealCake();await sleep(2600);
+  lightPool.classList.add('following');
+  for(let i=0;i<candleFlames.length;i++)await lightCandle(i);
+  lightPool.classList.remove('following');
+  const cr=cakeEl.getBoundingClientRect();
+  lightPool.style.left=(cr.left+cr.width/2)+'px';lightPool.style.top=(cr.top+cr.height*.45)+'px';
+  matchFlameEl.classList.remove('lit');stopPinkMotes();smokeAt(flameScreenPos(),5);
+  await tweenMatch({x:170,y:250,r:18},950,{ease:easeIn});
+  await sleep(800);wishUI.classList.add('show');
+}
+async function autoStrike(){if(ignited||dragEverStarted||!strikePhase)return;dragEverStarted=true;const s=stripEl.getBoundingClientRect();const x=s.left+s.width*.5;const yTop=s.top+12,yBot=s.bottom-12;const o=bodyOffset(HEAD_OFF,MATCH_R,MATCH_S);await tweenMatch({x:x-innerWidth*.5-o.x,y:yTop-innerHeight*.6-o.y,r:MATCH_R,s:MATCH_S},300,{ease:easeOut});await new Promise(res=>{const t0=performance.now(),dur=2000;function f(now){const p=Math.min(1,(now-t0)/dur);const hy=lerp(yTop,yBot,easeIO(p));putHeadAt(x,hy,MATCH_R,MATCH_S);if(p<1&&Math.random()<.75)sparkAt(x,hy);const nm=performance.now();if(nm-lastScrapeAt>80){lastScrapeAt=nm;sndScrape();}if(p<1)requestAnimationFrame(f);else res();}requestAnimationFrame(f);});slideDist=SLIDE_NEED+50;igniteMatch();}
+function onPointerDown(e){if(!strikePhase||ignited)return;const h=headScreenPos();if(Math.hypot(e.clientX-h.x,e.clientY-h.y)>135)return;dragging=true;dragEverStarted=true;clearTimeout(autoTimer);strikeHintEl.classList.remove('show');matchEl.classList.remove('hint');const lift=(e.pointerType==='mouse')?0:-34;dragOff={x:h.x-e.clientX,y:h.y-e.clientY+lift};putHeadAt(e.clientX+dragOff.x,e.clientY+dragOff.y,MATCH_R,MATCH_S);scrape(e.clientX+dragOff.x,e.clientY+dragOff.y);e.preventDefault();}
+function onPointerMove(e){if(!dragging||ignited)return;const hx=e.clientX+dragOff.x,hy=e.clientY+dragOff.y;putHeadAt(hx,hy,MATCH_R,MATCH_S);scrape(hx,hy);}
+function onPointerUp(){if(!dragging)return;dragging=false;lastPt=null;}
+$('#scene-match').addEventListener('pointerdown',onPointerDown);
+window.addEventListener('pointermove',onPointerMove);
+window.addEventListener('pointerup',onPointerUp);
+function revealCake(){const r=cakeEl.getBoundingClientRect();lightPool.classList.remove('following');lightPool.style.left=(r.left+r.width/2)+'px';lightPool.style.top=(r.top+r.height*.45)+'px';lightPool.style.transform='translate(-50%,-50%) scale(1)';lightPool.style.opacity='1';cakeEl.classList.add('show');setTimeout(startDreamyMotes,900);}
+async function moveFlameTo(tx,ty,dur){const cur=flameScreenPos();await tweenMatch({x:matchEl._t.x+(tx-cur.x),y:matchEl._t.y+(ty-cur.y),r:Math.max(18,matchEl._t.r-6)},dur,{onFrame:poolFollow});}
+async function lightCandle(i){const c=candlesEl.children[i];const r=c.getBoundingClientRect();await moveFlameTo(r.left+r.width/2,r.top-6,640);candleFlames[i].classList.add('lit');sndCandlePop();if(i===0){startCakeDynamics();}await sleep(330);}
+let cakeDynTimer=null;
+function startCakeDynamics(){stopCakeDynamics();const cl=document.getElementById('candleLight');if(cl)cl.classList.add('on');const t0=performance.now();function tick(now){if(!cakeDynTimer)return;const t=(now-t0)/1000;const flick=0.72+0.14*Math.sin(t*4.3)+0.08*Math.sin(t*7.1+1.3)+0.06*Math.sin(t*11.7+2.5);if(cl)cl.style.opacity=flick.toFixed(3);cakeDynTimer=requestAnimationFrame(tick);}cakeDynTimer=requestAnimationFrame(tick);}
+function stopCakeDynamics(){if(cakeDynTimer){cancelAnimationFrame(cakeDynTimer);cakeDynTimer=null;}const cl=document.getElementById('candleLight');if(cl){cl.classList.remove('on');cl.style.opacity='';}}
+const parts=[];
+function spawnPart(x,y,o){const el=document.createElement('div');el.className=o.cls;el.style.cssText='left:0;top:0;width:'+o.size+'px;height:'+o.size+'px;';$('#scene-match').appendChild(el);parts.push({x,y,vx:o.vx,vy:o.vy,g:o.g||0,life:0,max:o.max,size:o.size,cls:o.cls,el,seed:Math.random()*Math.PI*2});}
+function smokeAt(p,n){for(let i=0;i<n;i++){spawnPart(p.x+(Math.random()-.5)*14,p.y+(Math.random()-.5)*8,{cls:'smokeP',size:9+Math.random()*7,vx:(Math.random()-.5)*.5,vy:-.4-Math.random()*.7,g:-.002,max:1400+Math.random()*500});}}
+function partLoop(){for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.life+=16.7;if(p.life>=p.max){p.el.remove();parts.splice(i,1);continue;}p.x+=p.vx;p.y+=p.vy;p.vy+=p.g;const k=1-p.life/p.max;const s=p.cls==='smokeP'?1+p.life/p.max*2.4:1;let op=Math.max(0,k*(p.cls==='smokeP'?.8:.95));if(p.cls==='pinkP'||p.cls==='pinkP-soft')op*=0.55+0.45*(0.5+0.5*Math.sin(p.life*0.006+p.seed));p.el.style.transform='translate('+p.x+'px,'+p.y+'px) scale('+s+')';p.el.style.opacity=op;}requestAnimationFrame(partLoop);}
+partLoop();
+let pinkMoteTimer=null;
+function startPinkMotes(){stopPinkMotes();pinkMoteTimer=setInterval(()=>{if(!ignited){stopPinkMotes();return;}const fr=matchFlameEl.getBoundingClientRect();if(fr.width===0)return;const cx=fr.left+fr.width/2,cy=fr.top+fr.height*.45;const a=Math.random()*Math.PI*2;const r=34+Math.random()*70;spawnPart(cx+Math.cos(a)*r,cy+Math.sin(a)*r*.7,{cls:'pinkP',size:2+Math.random()*3,vx:(Math.random()-.5)*.35,vy:-0.3-Math.random()*.55,g:-0.0025,max:2000+Math.random()*1400});},150);}
+function stopPinkMotes(){if(pinkMoteTimer){clearInterval(pinkMoteTimer);pinkMoteTimer=null;}}
+let dreamMoteTimer=null;
+function startDreamyMotes(){stopDreamyMotes();dreamMoteTimer=setInterval(()=>{const r=cakeEl.getBoundingClientRect();if(r.width===0||!cakeEl.classList.contains('show'))return;const cx=r.left+r.width/2;const cy=r.top+r.height*0.55;const ang=Math.random()*Math.PI*2;const rad=Math.pow(Math.random(),0.55);const px=cx+Math.cos(ang)*r.width*0.65*rad;const py=cy+Math.sin(ang)*r.height*0.55*rad;const isSoft=Math.random()<0.35;spawnPart(px,py,{cls:isSoft?'pinkP-soft':'pinkP',size:isSoft?(7+Math.random()*10):(1.8+Math.random()*3.2),vx:(Math.random()-0.5)*0.35,vy:-0.12-Math.random()*0.35,g:-0.0012,max:2600+Math.random()*2600});},130);}
+function stopDreamyMotes(){if(dreamMoteTimer){clearInterval(dreamMoteTimer);dreamMoteTimer=null;}}
+let matchStarted=false;
+function startMatch(){if(matchStarted)return;matchStarted=true;showScene($('#scene-match'));runMatch();}
+async function runMatch(){await sleep(900);const o=bodyOffset(HEAD_OFF,MATCH_R,MATCH_S);await tweenMatch({x:innerWidth*.2-innerWidth*.5-o.x,y:innerHeight*.64-innerHeight*.6-o.y,r:MATCH_R,s:MATCH_S},850,{ease:easeOut});matchEl.classList.add('hint');strikeHintEl.classList.add('show');strikePhase=true;autoTimer=setTimeout(autoStrike,3500);}
+wishBtn.addEventListener('click',e=>{e.stopPropagation();wishUI.classList.remove('show');blowUI.classList.add('show');initMic();setTimeout(()=>{blowActive=true;micLoop();},300);});
+let micOk=false,micAnalyser=null,micStream=null,blowActive=false,blown=false,blowHits=0;
+async function initMic(){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){micOk=false;micStatusEl.textContent='🎤 麦克风不可用，点屏幕吹灭';return;}micStatusEl.textContent='🎤 正在请求麦克风权限…';try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});const ctx=AC();if(!ctx){stream.getTracks().forEach(t=>t.stop());micOk=false;return;}micStream=stream;const src=ctx.createMediaStreamSource(stream);micAnalyser=ctx.createAnalyser();micAnalyser.fftSize=512;src.connect(micAnalyser);micOk=true;micStatusEl.textContent='🎤 麦克风已就绪，吹一口气吧';}catch(e){micOk=false;micStatusEl.textContent='🎤 麦克风不可用，点屏幕吹灭';}}
+function micLoop(){if(!blowActive||blown)return;if(micOk&&micAnalyser){const d=new Uint8Array(micAnalyser.fftSize);micAnalyser.getByteTimeDomainData(d);let s=0;for(let i=0;i<d.length;i++){const v=(d[i]-128)/128;s+=v*v;}const rms=Math.sqrt(s/d.length);if(rms>.22)blowHits++;else blowHits=Math.max(0,blowHits-1);if(blowHits>=3)blow();}setTimeout(micLoop,60);}
+$('#scene-match').addEventListener('click',()=>{if(blowActive)blow();});
+const finalTipEl=$('#finalTip');
+let starsReady=false,finalAdvancing=false;
+function blow(){if(blown||!blowActive)return;blown=true;blowActive=false;stopPinkMotes();stopDreamyMotes();stopCakeDynamics();if(micStream)micStream.getTracks().forEach(t=>t.stop());sndBlow();candleFlames.forEach(f=>f.classList.add('out'));candleFlames.forEach(f=>{const r=f.getBoundingClientRect();smokeAt({x:r.left+r.width/2,y:r.top+r.height},3);});lightPool.style.opacity='.12';blowUI.classList.remove('show');
+  /* 这一段原本会在文字页进场时放一段 24 音的旋律（sndMelody）当背景音。
+   2026-10-19 加了《Sweet (feat. Landon Sears)》做全程背景音乐之后，
+   两段叠在一起打架，按用户要求把这里的「原来的背景音乐」去掉。
+   2026-10-20 晚一度把整段背景音乐从产物里拿掉，当天晚些时候又按用户要求放回来了 ——
+   还是《Sweet (feat. Landon Sears)》这一首（见 src\bgm\）。
+   结束语那一幕的 sndMelody()（在 extras.js 的 showCallEnd 里）保留没动。 */
+setTimeout(()=>{showScene($('#scene-final'));setTimeout(()=>{starsReady=true;finalTipEl.classList.add('ready');},6600);},2200);
+}
+$('#scene-final').addEventListener('click',()=>{
+  if(curScene!=='scene-final'||!starsReady||finalAdvancing)return;
+  finalAdvancing=true;starsReady=false;finalTipEl.classList.remove('ready');
+  const yStar=document.querySelector('.final-lines .yellow-star');
+  if(yStar){yStar.style.transition='transform .55s, opacity .55s';yStar.style.transform='scale(1.5)';yStar.style.opacity='0';}
+  setTimeout(()=>{initStarScene();showScene($('#scene-stars'));finalAdvancing=false;},500);
+});
+
+/* 20 颗星 */
+const starMessages=['我希望你以后，碰到那些都是好的人都是对的人，都是不会伤你的人。','愿你永远保留一点好奇心，去认识这个很大的世界。','愿你拥有健康的身体，也记得好好照顾自己。','愿你成为自己的太阳，无需凭借谁的光。','祝你时时峥嵘，如春在野。','希望你的眼睛一直笑，想要的都得到。','愿你的生活如四叶草般充满爱，希望，信仰与好运！','祝你，没有永远的梅雨季只有久违的艳阳天。','愿你快乐，不止生日。','愿你以后回头看今天的时候，会觉得20岁是一个很好的开始。','愿你偶尔迷茫的时候，页相信自己正在慢慢成长。','Cento di questi giorni!','Ti auguro un giorno speciale così come tu sei!','愿你一切为之努力的事情，都有浪漫的结果。','愿你眼中总有光，活成你想要的模样。','愿你崭新的时光通透温热','愿你不必一直坚强，偶尔也可以放心做个小朋友。','希望你像晴天一样明媚然后好好吃饭，别流眼泪。','一切惊喜都是，因为你很珍贵，只要尽情享受就好啦。','生日不仅是庆祝你的出生，更是庆祝你的存在 。'];
+const starCardEl=$('#starCard'),starIdxEl=$('#starIdx'),starTextEl=$('#starText'),starCloseEl=$('#starClose'),starFinalEl=$('#starFinal'),starCounterEl=$('#starCounter');
+let starOpen=false,starAutoTimer=null,starVisited=new Set(),isGathering=false;
+function initStarScene(){
+  const group=$('#starsGroup');group.innerHTML='';
+  const positions=[[180,420],[340,395],[290,560],[310,690],[380,800],[480,870],[590,890],[700,860],[790,800],[860,720],[905,625],[945,530],[990,435],[1060,360],[1150,285],[1255,320],[1285,425],[1235,530],[1160,620],[1255,670]];
+  positions.forEach((p,i)=>{
+    const use=document.createElementNS('http://www.w3.org/2000/svg','use');
+    use.setAttribute('href','#starShape');
+    use.setAttribute('transform',`translate(${p[0]},${p[1]}) scale(3)`);
+    use.setAttribute('class','star');
+    use.dataset.i=i+1;
+    use.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(isGathering)return;
+      const idx=parseInt(use.dataset.i,10);
+      /* 已经点开过的星星也能再点，卡片照常重播，但不再重复计数 */
+      if(use.classList.contains('visited')){openStarCard(idx);return;}
+      use.classList.add('visited');starVisited.add(idx);openStarCard(idx);
+      starCounterEl.textContent=`${starVisited.size} / 20`;
+      if(starVisited.size>=20){setTimeout(()=>{closeStarCard();setTimeout(gatherStars,300);},1500);}
+    });
+    group.appendChild(use);
+  });
+  starVisited.clear();starCounterEl.textContent='0 / 20';starCounterEl.classList.remove('hide');
+  const svg=document.querySelector('.stars-svg');if(svg){svg.style.opacity='';svg.style.transition='';}
+  isGathering=false;
+}
+/* 提示卡文案排版：卡片正文一行最多 STAR_MAXW 个字（= 卡片净宽 ÷ 单字宽），
+   超过就换行，换行点优先落在标点 / 空格上。新算法是「贪心成行 + 全局均衡候选」，
+   踩过的坑都在下面：
+     1. 候选断点必须两侧都不太短。太靠前的标点会把上半句砍成三五个字（「祝你，」），
+        收尾的句号也会让最后一行只剩一个句号。
+     2. 一行最多 STAR_MAXW 字；下一个候选断点还没到时就按 MAXW 断，
+        不要为了凑到下一个逗号把一行拉成 20+ 字。
+     3. 硬断不能劈开英文单词，意大利语那两条必须先滑到词边界。
+     4. 一个候选都没有时退回中点均衡硬断。 */
+const STAR_BREAK_MARKS=['，','。','；','、','！','？','!','?'];
+const STAR_BALANCE=0.28;                            /* 候选断点：两侧至少各占全文这个比例 */
+const STAR_MAXW=16;                                 /* 一行最多几个字 */
+const STAR_MIN=4;                                   /* 断出来的每一段至少几个字 */
+function splitStarText(t){
+  const s=String(t||'').trim();
+  const n=s.length;
+  /* 纯西文/数字（意大利语那两条）一律不分行：中文按 STAR_MAXW 断行是为了卡片高度可控，
+     西文本来就是横向排的，断成三行反而像在读标语。字号交给 fitSingleLine 缩。 */
+  if(!/[　-〿一-鿿＀-￯]/.test(s))return [s];
+  if(n<=STAR_MAXW)return [s];                       /* 短的保持一行 */
+
+  /* 1) 全局候选断点：标点或空格，且两侧都不太短 */
+  const minLen=n*STAR_BALANCE;
+  const cands=[];
+  for(let i=0;i<n-1;i++){
+    const ch=s.charAt(i);
+    if(STAR_BREAK_MARKS.indexOf(ch)<0&&ch!==' ')continue;
+    const brk=i+1;                                  /* 在 brk 之前断开，前半句含标点 */
+    if(brk>=minLen&&n-brk>=minLen)cands.push(brk);
+  }
+
+  /* 2) 一个候选都没有 → 中点均衡硬断，不制造 16/4 这种一头长一头短的形状 */
+  if(!cands.length){
+    const mid=Math.floor(n/2)-1;
+    return [s.slice(0,mid+1).trim(),s.slice(mid+1).trim()];
+  }
+
+  /* 3) 贪心成行 */
+  const isWord=function(ch){return /[0-9A-Za-zÀ-ɏ]/.test(ch);};   /* 含意大利语重音字母 */
+  const safeCut=function(from,want){
+    let c=Math.min(want,n);
+    if(c<=from)return from+1;
+    /* 两边都是字母数字说明劈在词中间，向后滑到下一个安全边界 */
+    while(c<n&&isWord(s.charAt(c-1))&&isWord(s.charAt(c)))c++;
+    return c>=n?Math.min(want,n):c;
+  };
+  const out=[];
+  let start=0;
+  for(;;){
+    if(n-start>STAR_MAXW){
+      let brk=-1;
+      for(let k=0;k<cands.length;k++){
+        const c=cands[k];
+        if(c>start&&c<=start+STAR_MAXW)brk=c;       /* 取最靠后的那个 */
+      }
+      if(brk<0)brk=safeCut(start,start+STAR_MAXW);
+      if(brk<=start)break;                          /* 防御：别死循环 */
+      out.push(s.slice(start,brk).trim());
+      start=brk;
+      continue;
+    }
+    /* 余下不足一行：如果还有个候选断点能把尾巴拆成两段都不短的，就再断一次。
+       没有这一步，长句在硬断之后会被压成一整坨 —— 参考图那句就靠它断成 16 / 6 / 9。 */
+    let brk=-1;
+    for(let k=0;k<cands.length;k++){
+      const c=cands[k];
+      if(c>=start+STAR_MIN&&n-c>=STAR_MIN&&c-start<=STAR_MAXW)brk=c;
+    }
+    if(brk>0){out.push(s.slice(start,brk).trim());start=brk;}
+    const tail=s.slice(start).trim();
+    if(tail)out.push(tail);
+    break;
+  }
+  /* 4) 收尾：把只剩一两个字的孤行并回上一行（「…tu se」「!」这种） */
+  while(out.length>1&&out[out.length-1].length<STAR_MIN){
+    const last=out.pop();
+    out[out.length-1]+=last;
+  }
+  return out.length?out:[s];
+}
+/* 某一行超宽（为了不劈开英文单词而放宽过）时把整张卡的字号降一档 */
+function starCardFit(lines){
+  let mx=0;
+  for(let i=0;i<lines.length;i++)mx=Math.max(mx,lines[i].length);
+  starTextEl.style.setProperty('--cf',
+    mx>19?'clamp(13px,2.5vw,17px)':(mx>17?'clamp(15px,3.0vw,20px)':'clamp(18px,3.8vw,25px)'));
+  if(lines.length===1)fitSingleLine();
+}
+/* 单行（西文那两条）按实测宽度缩字号，保证 nowrap 下不溢出卡片。
+   card-text 是 nowrap，所以这里必须真量 scrollWidth，不能只按字数估。 */
+function fitSingleLine(){
+  const cs=getComputedStyle(starCardEl);
+  const box=starCardEl.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+  if(!(box>40))return;                              /* 卡片还没布局好，跳过 */
+  let fs=parseFloat(getComputedStyle(starTextEl).fontSize)||20;
+  starTextEl.style.fontSize=fs+'px';
+  let guard=0;
+  while(starTextEl.scrollWidth>box&&fs>8.5&&guard++<80){
+    fs=Math.max(8.5,fs-0.5);
+    starTextEl.style.fontSize=fs+'px';
+  }
+}
+function openStarCard(i){
+  const lines=splitStarText(starMessages[i-1]);
+  starIdxEl.textContent=String(i).padStart(2,'0');
+  starTextEl.innerHTML=lines.join('<br>');
+  starTextEl.style.fontSize='';                     /* 清掉上一张的行内字号，否则只会越缩越小 */
+  starCardFit(lines);
+  starCardEl.classList.add('show');
+  starOpen=true;
+  if(starAutoTimer)clearTimeout(starAutoTimer);
+  starAutoTimer=setTimeout(closeStarCard,5000);
+}
+function closeStarCard(){if(!starOpen)return;starCardEl.classList.remove('show');starOpen=false;if(starAutoTimer){clearTimeout(starAutoTimer);starAutoTimer=null;}}
+/* 天蝎座：20 颗星各就各位。坐标系是一张 1000×620 的画布（已经铺满整个框），
+   p=坐标、s=大小倍率、k:'ring' 表示画成空心圆（和参考图里的几个关键星一样）。 */
+const SCORPIUS=[
+  {p:[829, 70],s:1.35},{p:[940,134],s:1,k:'ring'},{p:[757,164],s:.85},{p:[853,188],s:.85},
+  {p:[898,261],s:1.3},{p:[798,300],s:.85},{p:[619,261],s:.95,k:'ring'},{p:[586,359],s:.9},
+  {p:[650,188],s:.7},{p:[492,486],s:1.3},{p:[392,541],s:.9},{p:[223,545],s:.8},
+  {p:[102,481],s:.9},{p:[194,422],s:.8},{p:[ 60,314],s:.85},{p:[343,291],s:.9},
+  {p:[290,508],s:.65},{p:[156,530],s:.65},{p:[495,388],s:.65},{p:[780,339],s:.65}
+];
+/* 连线：头部七边形 → 颈 → 蝎身三角 → 蝎尾 → 螫刺两叉（两个叉尖都是自由端） */
+const SCORPIUS_LINES=[
+  [0,1],[1,3],[3,4],[4,5],[5,6],[6,2],[2,0],
+  [5,19],[19,7],[7,18],[18,9],[9,7],
+  [9,16],[16,10],[10,17],[17,11],
+  [11,12],[12,13],[13,14],[13,15]
+];
+function gatherStars(){
+  if(isGathering)return;isGathering=true;
+  starCounterEl.classList.add('hide');
+  const svg=document.querySelector('.stars-svg');
+  svg.style.transition='opacity .6s';svg.style.opacity='0';
+  const stars=document.querySelectorAll('.stars-svg .star');
+  const W=window.innerWidth,H=window.innerHeight;
+  /* 星座整体铺在上方，下方留给「20 颗星星，都送给你」 */
+  const boxW=Math.min(W*0.86,980),boxH=boxW*0.62;
+  const boxX=(W-boxW)/2,boxY=Math.max(H*0.05,34);
+  const sx=x=>boxX+x/1000*boxW, sy=y=>boxY+y/620*boxH;
+  const wrap=document.createElement('div');wrap.id='starGatherOverlay';document.body.appendChild(wrap);
+  /* 星座连线先铺在最底下，等星到位了再一起亮出来 */
+  const lineSvg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  lineSvg.setAttribute('class','constellation');
+  lineSvg.setAttribute('viewBox','0 0 '+W+' '+H);
+  lineSvg.setAttribute('preserveAspectRatio','none');
+  const gEl=document.createElementNS('http://www.w3.org/2000/svg','g');
+  SCORPIUS_LINES.forEach(seg=>{
+    const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+    l.setAttribute('x1',sx(SCORPIUS[seg[0]].p[0]));l.setAttribute('y1',sy(SCORPIUS[seg[0]].p[1]));
+    l.setAttribute('x2',sx(SCORPIUS[seg[1]].p[0]));l.setAttribute('y2',sy(SCORPIUS[seg[1]].p[1]));
+    gEl.appendChild(l);
+  });
+  lineSvg.appendChild(gEl);wrap.appendChild(lineSvg);
+  stars.forEach((star,index)=>{
+    const rect=star.getBoundingClientRect();
+    const el=document.createElement('div');
+    const spec=SCORPIUS[index]||{p:[500,310],s:.7};
+    el.className='gather-star'+(spec.k==='ring'?' ring':'');
+    el.style.left=(rect.left+rect.width/2)+'px';el.style.top=(rect.top+rect.height/2)+'px';
+    wrap.appendChild(el);
+    void el.offsetWidth;
+    setTimeout(()=>{
+      el.style.left=sx(spec.p[0])+'px';el.style.top=sy(spec.p[1])+'px';
+      el.style.transform='translate(-50%,-50%) scale('+spec.s+')';
+      setTimeout(()=>el.classList.add('blink'),1200);
+    },index*45);
+  });
+  setTimeout(()=>{starFinalEl.classList.add('show');armParkEntry();},2400);
+}
+document.addEventListener('click',()=>{if(starOpen)closeStarCard();});
+starCloseEl.addEventListener('click',e=>{e.stopPropagation();closeStarCard();});
+
+window.addEventListener('pointerdown',function unlock(){AC();window.removeEventListener('pointerdown',unlock);},{once:true});
+/* =============================================================
+   背景音乐 · Sweet (feat. Landon Sears) — Bren Joy / Landon Sears
+   ------------------------------------------------------------
+   音频整份以 base64 内嵌进产物（和沙盘 / 3D 翻盖机同一个路子），
+   所以产物依旧是 ONE 个自包含 html：file:// 双击能开，离线也能响。
+
+   为什么用 Blob 而不是 data: URL：
+   4.4 MB 的 base64 塞进 src 属于超长 URL，有些浏览器会挑毛病；
+   走 Blob URL（atob → Uint8Array → Blob）没有长度上限，
+   而且这封信里沙盘和翻盖机已经是这么干的（PHONE_B64 / PARK_B64）。
+
+   自动播放策略：没有用户手势浏览器不让播。
+   这封信的第一次交互是「在密码框里敲第一个字」，
+   所以这里盯着第一次 pointerdown / keydown / touchstart 开播 ——
+   那一下正好带着用户激活（user activation），play() 不会被拦。
+   万一还是被拦了（无手势直接打开、或者浏览器策略更严），
+   就把左上角那颗音符点亮并提示一句，点一下照样能开。
+
+   音量压得很低（0.26），而且每次音效响起都会把音乐往下压一档，
+   免得两个声音打架 —— 音量只有一个地方在写（bgmPump），
+   淡入淡出和「压低」都走这一条路，不会互相打架。
+   ============================================================= */
+
+var BGM_VOL = 0.26;
+
+var bgmAudioEl = null, bgmObjectURL = null;
+var bgmState = 'idle';        /* idle 还没开始 / on 正在放 / off 被手动关了 */
+var bgmTargetVol = 0, bgmDuckF = 1, bgmPumpRAF = 0;
+var bgmBtn = null, bgmHint = null, bgmHintTimer = null, bgmDuckTimer = null;
+var bgmArmed = false;
+
+/* ---------- 音频对象 ---------- */
+function bgmObjectUrl() {
+  if (bgmObjectURL !== null) return bgmObjectURL;
+  try {
+    var bin = atob(BGM_B64), n = bin.length, arr = new Uint8Array(n);
+    for (var i = 0; i < n; i++) arr[i] = bin.charCodeAt(i);
+    bgmObjectURL = URL.createObjectURL(new Blob([arr], { type: 'audio/mpeg' }));
+  } catch (e) {
+    bgmObjectURL = '';
+  }
+  return bgmObjectURL;
+}
+function bgmGetAudio() {
+  if (bgmAudioEl) return bgmAudioEl;
+  var a = document.createElement('audio');
+  a.loop = true;
+  a.preload = 'auto';
+  a.setAttribute('playsinline', '');
+  a.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
+  var u = bgmObjectUrl();
+  if (u) a.src = u;
+  document.body.appendChild(a);
+  bgmAudioEl = a;
+  return a;
+}
+
+/* ---------- 音量：只有这一处会写 a.volume ---------- */
+function bgmPump() {
+  if (bgmPumpRAF) return;
+  var step = function () {
+    var a = bgmAudioEl;
+    if (!a) { bgmPumpRAF = 0; return; }
+    var want = bgmTargetVol * bgmDuckF;
+    if (Math.abs(a.volume - want) < 0.0015) { a.volume = want; bgmPumpRAF = 0; return; }
+    a.volume += (want - a.volume) * 0.14;
+    bgmPumpRAF = requestAnimationFrame(step);
+  };
+  bgmPumpRAF = requestAnimationFrame(step);
+}
+
+/* 音效响的时候把音乐压低一档 */
+function bgmDuck(ms) {
+  if (!bgmAudioEl || bgmState !== 'on') return;
+  bgmDuckF = 0.45;
+  bgmPump();
+  clearTimeout(bgmDuckTimer);
+  bgmDuckTimer = setTimeout(function () { bgmDuckF = 1; bgmPump(); }, ms || 1300);
+}
+
+/* ---------- 左上角那颗音符 ---------- */
+function bgmSetState(s) {
+  bgmState = s;
+  if (!bgmBtn) return;
+  bgmBtn.classList.remove('idle', 'on', 'off');
+  bgmBtn.classList.add(s);
+  var on = (s === 'on');
+  bgmBtn.setAttribute('aria-label', on ? '背景音乐：开' : '背景音乐：关');
+  bgmBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+}
+function bgmSay(msg, ms) {
+  if (!bgmHint) return;
+  bgmHint.textContent = msg;
+  bgmHint.classList.add('show');
+  clearTimeout(bgmHintTimer);
+  bgmHintTimer = setTimeout(function () { bgmHint.classList.remove('show'); }, ms || 4200);
+}
+function bgmBuildUI() {
+  if (bgmBtn) return;
+  var b = document.createElement('button');
+  b.id = 'bgmBtn';
+  b.type = 'button';
+  b.textContent = '♪';
+  b.addEventListener('click', function (e) { e.stopPropagation(); bgmToggle(); });
+  document.body.appendChild(b);
+  bgmBtn = b;
+
+  var h = document.createElement('div');
+  h.id = 'bgmHint';
+  document.body.appendChild(h);
+  bgmHint = h;
+
+  bgmSetState('idle');
+}
+
+/* ---------- 播放 / 停止 ---------- */
+function bgmStart() {
+  var a = bgmGetAudio();
+  if (!a || !a.src) { bgmSay('音乐没能加载出来'); return; }
+  bgmDisarm();
+  bgmTargetVol = BGM_VOL;
+  bgmPump();
+  var p = null;
+  try { p = a.play(); } catch (e) { p = null; }
+  if (p && typeof p.then === 'function') {
+    p.then(function () {
+      bgmSetState('on');
+      bgmSay('♪ Sweet · feat. Landon Sears', 2800);
+    }).catch(function () {
+      bgmTargetVol = 0; bgmPump();
+      bgmSetState('idle');
+      bgmSay('点一下左上角的 ♪ 开启音乐');
+    });
+  } else {
+    bgmSetState('on');
+  }
+}
+function bgmStop() {
+  bgmTargetVol = 0;
+  bgmPump();
+  bgmSetState('off');
+  setTimeout(function () {
+    if (bgmState === 'off' && bgmAudioEl) { try { bgmAudioEl.pause(); } catch (e) {} }
+  }, 800);
+}
+function bgmToggle() {
+  if (bgmState === 'on') { bgmStop(); bgmSay('音乐已关'); }
+  else { bgmStart(); }
+}
+
+/* ---------- 从某一幕开始彻底不要背景音乐（接电话那一幕用） ----------
+   淡出 → 停 → 左上角那颗 ♪ 变成「关」。
+   顺便把「第一次手势就开播」那个监听摘掉（bgmDisarm），
+   这样后面再怎么点屏幕，音乐也不会自己冒出来 —— 只有用户主动点 ♪ 才可能再响。 */
+function bgmFadeOut() {
+  bgmDisarm();
+  clearTimeout(bgmDuckTimer);
+  bgmDuckF = 1;
+  bgmTargetVol = 0;
+  bgmPump();
+  bgmSetState('off');
+  if (!bgmAudioEl) return;
+  setTimeout(function () {
+    if (bgmState === 'off' && bgmAudioEl) { try { bgmAudioEl.pause(); } catch (e) {} }
+  }, 1500);
+}
+
+/* 「从头再来一遍」：把音乐重新武装回「第一次手势就开播」。
+   信从头走，前面的段落（信纸 / 卷轴 / 蛋糕 / 星星 / 游乐园）还是要有音乐的。 */
+function bgmRearm() {
+  if (bgmState === 'on') return;              /* 还在放就别管 */
+  if (bgmAudioEl) { try { bgmAudioEl.currentTime = 0; } catch (e) {} }
+  bgmTargetVol = 0;
+  bgmPump();
+  bgmSetState('idle');
+  bgmArm();
+}
+
+/* ---------- 第一次手势就开播 ---------- */
+function bgmOnFirstGesture(e) {
+  if (bgmState === 'on') { bgmDisarm(); return; }
+  var t = e && e.target;
+  /* 点的是音符本身就别抢：让按钮自己决定开还是关 */
+  if (t && t.closest && t.closest('#bgmBtn')) return;
+  bgmStart();
+}
+function bgmArm() {
+  if (bgmArmed) return;
+  bgmArmed = true;
+  var evs = ['pointerdown', 'keydown', 'touchstart'];
+  for (var i = 0; i < evs.length; i++) {
+    window.addEventListener(evs[i], bgmOnFirstGesture, { capture: true, passive: true });
+  }
+}
+function bgmDisarm() {
+  if (!bgmArmed) return;
+  bgmArmed = false;
+  var evs = ['pointerdown', 'keydown', 'touchstart'];
+  for (var i = 0; i < evs.length; i++) {
+    window.removeEventListener(evs[i], bgmOnFirstGesture, { capture: true });
+  }
+}
+
+/* ---------- 把音效包一层：响的时候顺手压一下音乐 ----------
+   信纸里 sndStrike / sndChime / … 都是顶层函数声明（经典脚本），
+   所以它们是 window 上的属性，替换掉之后信里所有 sndXxx() 调用
+   都会走这一层。原来的实现原样保留，只是前面多了一次压低。 */
+(function () {
+  var names = ['sndStrike', 'sndScrape', 'sndIgnite', 'sndCandlePop',
+               'sndChime', 'sndPaper', 'sndBlow', 'sndMelody'];
+  for (var i = 0; i < names.length; i++) {
+    (function (nm) {
+      var orig = window[nm];
+      if (typeof orig !== 'function') return;
+      window[nm] = function () {
+        bgmDuck(1300);
+        return orig.apply(this, arguments);
+      };
+    })(names[i]);
+  }
+})();
+
+/* ---------- 起手 ---------- */
+bgmBuildUI();
+bgmArm();
+
+/* =============================================================
+   烟花绽放声 —— 一次烟花炸开的音效配方
+   ------------------------------------------------------------
+   这份源码被两个宿主共用：
+     1) 沙盘自己（index.html / dist\starlight-park-3d.html 里各有一份）
+     2) 生日信的父页（merge-birthday.ps1 把这个文件内联进父页）
+   所以它不能碰 SW 命名空间里的东西，也不依赖 THREE。
+
+   为什么沙盘不自己出声？
+   沙盘在信里是塞在 data: iframe 里的。data: 的 origin 是不透明的，
+   用户在父页（生日信）里的点击**不会**给这个 iframe 授予「用户激活」，
+   iframe 里新建的 AudioContext 会被浏览器的自动播放策略按在 suspended。
+   父页是同一个文档，早就被「输密码」那一下激活过了，AudioContext 是通的，
+   所以真正发声的是父页：沙盘只负责报告「刚刚炸了一发」。
+
+   声音配方（三层叠在一起）：
+     低频「咚」    正弦 132Hz → 45Hz 下滑，0.46 秒    —— 炸开时胸口那一下
+     中频「轰」    低通噪声 ~520Hz，0.50 秒            —— 空气被推开的感觉
+     高频「噼啪」  带通噪声 ~2600Hz，0.20 秒           —— 火星的碎响
+   压轴礼花（big）低频更低、时长更长、整体更响；
+   夜空的常驻远景烟花（quiet）只留一点点闷响，当背景音。
+
+   限流：礼花峰值那一波会同时炸十几发，全放出来就是一片噪音。
+   这里按「最近 0.5 秒里已经响过几声」自动把后面的压低（而不是硬丢掉），
+   听起来就是一串噼里啪啦，不会糊。
+   ============================================================= */
+(function () {
+  var root = (typeof window !== 'undefined') ? window : this;
+  var NS = (root.SW = root.SW || {});
+
+  var ctx = null;
+  var log = [];            /* 最近 0.5 秒里响过的次数 */
+  var played = 0;          /* 一共真的排出去多少声（体检用） */
+
+  function ensure() {
+    if (ctx) {
+      if (ctx.state === 'suspended' && ctx.resume) { try { ctx.resume(); } catch (e) {} }
+      return ctx;
+    }
+    /* 父页（birthday-letter.html）已经有自己的 AudioContext 了（那边的 AC()），
+       同一个页面别开第二个 —— 直接复用它的。 */
+    if (typeof root.AC === 'function') {
+      try {
+        var c0 = root.AC();
+        if (c0) { ctx = c0; return ctx; }
+      } catch (e) { /* 落到下面自己开一个 */ }
+    }
+    var C = root.AudioContext || root.webkitAudioContext;
+    if (!C) return null;
+    try { ctx = new C(); } catch (e) { ctx = null; }
+    return ctx;
+  }
+
+  function osc(c, type, f0, f1, dur, gain, t0) {
+    var o = c.createOscillator();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(f0, t0);
+    if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t0 + dur);
+    var g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), t0 + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(t0); o.stop(t0 + dur + 0.05);
+  }
+
+  function nse(c, type, freq, q, dur, gain, t0) {
+    var len = Math.max(1, Math.floor(c.sampleRate * dur));
+    var buf = c.createBuffer(1, len, c.sampleRate);
+    var d = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    var src = c.createBufferSource();
+    src.buffer = buf;
+    var f = c.createBiquadFilter();
+    f.type = type || 'bandpass';
+    f.frequency.value = freq; f.Q.value = q;
+    var g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), t0 + Math.min(0.02, dur * 0.3));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(f); f.connect(g); g.connect(c.destination);
+    src.start(t0);
+  }
+
+  /* 真正发声。v = 0..1 的响度，big = 压轴礼花，quiet = 夜空的远景烟花 */
+  function play(v, big, quiet) {
+    var c = ensure();
+    if (!c) return false;
+    v = (v == null) ? 1 : Math.max(0, Math.min(1, v));
+    if (quiet) v *= 0.28;
+    var now = c.currentTime, i, k = 0;
+    for (i = 0; i < log.length; i++) { if (now - log[i] < 0.5) k++; }
+    log = log.filter(function (t) { return now - t < 0.5; });
+    log.push(now);
+    /* 挤在一起就自动压低：礼花峰值不能糊成一片噪音 */
+    var duck = 1 / (1 + k * 0.40);
+    var g = Math.max(0.02, v) * duck * (big ? 1.15 : 1);
+    var f0 = big ? 96 : 132;
+    osc(c, 'sine', f0, f0 * 0.34, big ? 0.62 : 0.46, 0.20 * g, now);
+    nse(c, 'lowpass', quiet ? 300 : 520, 0.6, big ? 0.62 : 0.50, 0.13 * g, now);
+    if (!quiet) nse(c, 'bandpass', 2600, 1.1, 0.20, 0.075 * g, now);
+    played++;
+    return true;
+  }
+
+  var api = {
+    play: play,
+    /* 沙盘侧调用：嵌在信里就通知父页发声，独立打开就自己发声 */
+    boom: function (v, big, quiet) {
+      var embedded = false;
+      try { embedded = !!(root.parent && root.parent !== root); } catch (e) { embedded = true; }
+      if (embedded) {
+        try { root.parent.postMessage({ park: 'boom', v: v, big: !!big, quiet: !!quiet }, '*'); } catch (e) {}
+        return true;
+      }
+      return play(v, big, quiet);
+    },
+    /* 给体检用：最近 0.5 秒里响过几声 */
+    density: function () { return log.length; },
+    /* 给体检用：一共真的排出去多少声（能对上就说明声音确实发出去了） */
+    played: function () { return played; },
+    ctxState: function () { return ctx ? ctx.state : 'none'; }
+  };
+
+  root.FWAudio = api;
+  NS.FWAudio = api;
+})();
+
+/* =============================================================
+   星光木语 · 生日信  |  附加场景逻辑：接电话
+   流程：密码 → 信纸 → 卷轴 → 火柴蛋糕 → 文字页
+        → 20 颗星 → 游乐园 → 接电话
+   ------------------------------------------------------------
+   「伞下心事」整幕已经搬去 src\umbrella\umbrella-scene.js，
+   不再注入产物。
+   ============================================================= */
+
+/* ---------- 共用小工具 ---------- */
+function el(tag, cls, html) {
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html !== undefined) n.innerHTML = html;
+  return n;
+}
+
+/* ============================================================
+   二、接电话 —— 3D 翻盖机（整份 MAGIC DUO 以 base64 内嵌，运行时用 blob: URL 塞进 iframe）
+   ============================================================ */
+
+var phoneWrapEl   = document.getElementById('phoneWrap');
+var phoneFrameEl  = document.getElementById('phoneFrame');
+var callClosed    = document.getElementById('callClosed');
+var callOpen      = document.getElementById('callOpen');
+var callTalking   = document.getElementById('callTalking');
+var callBadgeEl   = document.getElementById('callBadge');
+var callTipEl     = document.getElementById('callTip');
+var callGestureEl = document.getElementById('callGesture');
+var talkingTimeEl = document.getElementById('talkingTime');
+var talkingMsgsEl = document.getElementById('talkingMsgs');
+
+var phoneLoaded = false, phoneReady = false, phoneSettled = false, callPicked = false;
+var callAnswered = false, handsOn = false;
+var callTimer = null, callEndTimer = null;
+
+function phoneURL(kind) {
+  try {
+    if (kind === 'blob') {
+      var bin = atob(PHONE_B64), arr = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      return URL.createObjectURL(new Blob([arr], { type: 'text/html;charset=utf-8' }));
+    }
+    return 'data:text/html;charset=utf-8;base64,' + PHONE_B64;
+  } catch (e) { return ''; }
+}
+
+/* 父页 → iframe：一律走 postMessage('*')。
+   blob: 继承父页 origin、理论上够得到 contentWindow.MAGICDUO，
+   但 data: 兜底那条路 origin 不透明，而 postMessage 对两种都成立，统一用它最省事。 */
+function phoneCmd(cmd, label, on) {
+  if (!phoneReady || !phoneFrameEl.contentWindow) return;
+  try { phoneFrameEl.contentWindow.postMessage({ magicduo: cmd, label: label || '', on: !!on }, '*'); } catch (e) {}
+}
+
+/* 通话秒数推给 3D 手机，让机身屏幕和这边显示同一个数字 */
+function phoneSec(s) {
+  if (!phoneReady || !phoneFrameEl.contentWindow) return;
+  try { phoneFrameEl.contentWindow.postMessage({ magicduo: 'sec', sec: s | 0 }, '*'); } catch (e) {}
+}
+
+function loadPhone() {
+  if (phoneLoaded) return;
+  phoneLoaded = true;
+  var ok = function () {
+    if (phoneSettled) return; phoneSettled = true;
+    phoneFrameEl.classList.add('on');
+  };
+  phoneFrameEl.addEventListener('load', ok);
+  phoneFrameEl.addEventListener('error', function () {
+    if (phoneSettled) return; phoneSettled = true;
+    phoneWrapEl.classList.add('failed');
+  });
+
+  /* 双击打开（file://）时，父页的 origin 是不透明的：
+     blob: / data: 的 iframe 都继承这个不透明 origin → iframe 里 isSecureContext=false、
+     压根没有 navigator.mediaDevices，手机那边只能报
+     「此环境不提供摄像头接口（需要 https 或 127.0.0.1）」。
+     解法：file:// 打开时，机身改从本机服务取 —— http://127.0.0.1 是安全上下文，
+     摄像头、MediaPipe 的 wasm 与模型全都正常。
+     两边从头到尾只靠 postMessage('*') 说话，跨源也成立，不影响任何既有交互。 */
+  if (location.protocol === 'file:') {
+    serveProbe(SERVE_PHONE_URL).then(function (up) {
+      if (!up) { loadPhoneEmbedded(); return; }
+      phoneFrameEl.src = SERVE_PHONE_URL;
+      /* 服务在跑、但这个路径没有文件（404 页）时，手机不会发「就绪」——
+         等一会儿没等到就换回内嵌版，别把一屏 404 留在那儿。 */
+      setTimeout(function () {
+        if (!phoneReady) phoneFrameEl.src = phoneURL('blob');
+      }, 8000);
+    });
+    return;
+  }
+  loadPhoneEmbedded();
+}
+
+/* 内嵌版机身：blob: 优先（继承父页 origin，同源最稳），
+   万一 blob 被浏览器拦下，9 秒后自动退回 data:，至少 3D 机身还在。 */
+function loadPhoneEmbedded() {
+  phoneFrameEl.src = phoneURL('blob');
+  setTimeout(function () { if (!phoneSettled) phoneFrameEl.src = phoneURL('data'); }, 9000);
+}
+
+addEventListener('message', function (e) {
+  var d = e.data;
+  if (!d) return;
+  if (d.magicduo === 'ready') {
+    phoneReady = true;
+    phoneCmd('close');
+    phoneCmd('buzz', '', true);
+    /* 机身刚就位：把「让位」状态重新对一遍（上一轮要是开着摄像头，
+       新加载的机身默认是显示自己那行字的）。 */
+    syncHostBar();
+    return;
+  }
+  /* 3D 手机那边把手势开起来了 / 关掉了 —— 信里跟着给一行玩法提示 */
+  if (d.magicduo === 'hands') {
+    handsOn = !!d.on;
+    syncHostBar();
+    /* 开摄像头失败时，手机那边会带 fail + reason 过来。
+       双击打开（file://）时最常见：浏览器不给摄像头权限，手机只能退回鼠标模式。
+       这时候给一条能点的出路，别让人对着那句报错干瞪眼。 */
+    if (!d.on && d.fail) {
+      showLocalServeHint(d.reason || '');
+      /* 双击打开（file://）时，浏览器的摄像头授权给不了（顶层页面是 file://，
+         Chrome 没法把「允许用摄像头」记在它头上），机身那行字只会说「权限被拒」，
+         像是我自己点的拒绝 —— 换成一句能照着做的说明。 */
+      if (location.protocol === 'file:') {
+        phoneCmd('status', '双击打开（file://）不给摄像头权限 · 请点左上角横幅里的地址，用本机服务打开');
+      }
+    }
+    return;
+  }
+  /* 机身底部那行状态文字的位置 —— 父页这张提示卡要照着它摆 */
+  if (d.magicduo === 'hintslot') {
+    if (callGestureEl) callGestureEl.style.bottom = (d.bottom | 0) + 'px';
+    return;
+  }
+  /* 手势动作：这一条通道是「手势接听」真正生效的地方 */
+  if (d.magicduo === 'gesture') {
+    onPhoneGesture(d.kind);
+  }
+});
+
+/* 手势提示卡贴在机身底部那行状态文字的位置上（原来是浮在机身中间，正好压住 3D 机身）。
+   手机那行字说的是「悬浮放星 / 左右挥动换呼吸」这些独立站点才有的玩法，
+   信里换成自己的话更准 —— 于是卡片亮出来时，让手机那行字先把位置让出来。
+   用 visibility 让位而不是 display：盒子留着，父页量到的坐标不会跳。 */
+function syncHostBar() {
+  if (callGestureEl) callGestureEl.classList.toggle('on', handsOn);
+  var on = handsOn && callOpen.classList.contains('on');
+  phoneCmd('hostbar', '', on);
+}
+
+/* ---------- 双击打开（file://）时：摄像头没有权限，给一条能点的出路 ----------
+   getUserMedia 要安全上下文：https 或 127.0.0.1 / localhost。
+   双击 dist\birthday-park.html 用 file:// 打开时，父页的 origin 是不透明的，
+   iframe 里那台 3D 翻盖机继承这个 origin —— 里面压根没有 navigator.mediaDevices，
+   手机那边只能显示「此环境不提供摄像头接口（需要 https 或 127.0.0.1）」再退回鼠标模式。
+   信还是能看的，只是手势接听用不了；所以补一条横幅：写清楚该点哪个地址，
+   顺带探一下本机服务起没起，省得还要自己去猜。 */
+var SERVE_BASE = 'http://127.0.0.1:8321';
+var SERVE_URL = SERVE_BASE + '/letter/birthday-park.html';
+var SERVE_PHONE_URL = SERVE_BASE + '/letter/magic-duo-phone.html';
+
+/* 探一下本机服务在不在：file:// 页面发一个 no-cors 的 HEAD 过去，
+   连不上会 reject，连上了会给一个 opaque 响应（读不到内容没关系）。
+   注意它只能回答「服务在不在」，回答不了「这个路径存不存在」。 */
+function serveProbe(url) {
+  return new Promise(function (resolve) {
+    var done = false;
+    var finish = function (v) { if (done) return; done = true; resolve(v); };
+    try {
+      fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' })
+        .then(function () { finish(true); })
+        .catch(function () { finish(false); });
+      setTimeout(function () { finish(false); }, 2500);
+    } catch (e) { finish(false); }
+  });
+}
+
+function showLocalServeHint(reason) {
+  if (location.protocol !== 'file:') return;   /* 走 http 打开的根本没这问题 */
+  if (document.getElementById('serveHint')) return;
+  var box = el('div', 'serve-hint');
+  box.id = 'serveHint';
+  var why = reason
+    ? '刚试过，摄像头开不了：' + String(reason).slice(0, 40) + '。'
+    : '这个文件是双击打开的（file://），浏览器不给摄像头权限，手势接听那一步用不了。';
+  var msg = el('div', 'serve-hint-msg');
+  msg.innerHTML = '<b>✋ 手势接听要用本机服务打开</b>' +
+    '<span>' + why + '换成下面这个地址就行，还是同一封信。' +
+    '（本机服务开着的话，这个页面里的 3D 翻盖机会自动改从服务上取，摄像头照样能用。）</span>';
+  var go = el('a', 'serve-hint-go', '点这里打开 ' + SERVE_URL);
+  go.href = SERVE_URL;
+  go.target = '_blank';
+  go.rel = 'noopener';
+  var tip = el('div', 'serve-hint-tip', '正在确认本机服务…');
+  var x = el('button', 'serve-hint-x', '✕');
+  x.type = 'button';
+  x.title = '知道了';
+  x.addEventListener('click', function () { if (box.parentNode) box.parentNode.removeChild(box); });
+  box.appendChild(msg);
+  box.appendChild(go);
+  box.appendChild(tip);
+  box.appendChild(x);
+  document.body.appendChild(box);
+  /* 探一下服务在不在 */
+  var down = '点不开的话：先运行 build\\serve-letter.ps1（或双击项目根目录的「打开生日信.cmd」），再点上面的地址';
+  serveProbe(SERVE_URL).then(function (up) {
+    tip.textContent = up
+      ? '本机服务已经在跑，直接点上面那个地址就行（这封信里的翻盖机也会自动切到服务上的版本）'
+      : down;
+  });
+}
+
+/* 双击打开的话，一进来就把提示摆上 —— 别等用户去点摄像头才发现开不了。 */
+if (location.protocol === 'file:') showLocalServeHint('');
+
+/* ---------- 手势 → 剧情 ---------- */
+function onPhoneGesture(kind) {
+  if (kind === 'open') {          /* 张开五指 / 翻开盖子 = 接听 */
+    acceptCall();
+  } else if (kind === 'close') {  /* 握拳 / 合上盖子 = 先不接 */
+    declineCall();
+  } else if (kind === 'answer') { /* 捏合按下 CALL 键 = 接听 */
+    acceptCall();
+  } else if (kind === 'hangup') { /* 捏合按下 CLR 键 = 挂断 */
+    endTalkNow();
+  }
+}
+
+/* ---------- 语音：文字版说完之后，对方发来一条录好的原声 ----------
+   录音是本人录的，源头 8.53 秒里有一大半是空的：
+   开头 1.55 秒一声没出，中间还有 1 秒和 0.55 秒两个大停顿。
+   已经按「只剪空白、不动音色」处理过（没有降噪、没有变调），
+   留 0.25~0.35 秒的自然呼吸，剩 5.91 秒。
+   整份以 base64 内嵌进产物，file:// 双击也能放。
+
+   浏览器有自动播的规矩：还没听过用户手势的页面不许自己出声。
+   所以这里两条路都留着：
+     1) 接听那一刻（那里有真实手势）先把这条音频的锁开掉，
+        后面它就能自己出声；
+     2) 还是被挡着，就老老实实让人点一下 ▶，气泡上写「点一下听」。
+   语音放完才接结束语；一次都没响起来也别把剧情卡住，兜底往下走。 */
+
+var voiceEl = null, voiceBox = null;
+var voicePlayed = false, voiceEnded = false, voiceTimer = null, voicePriming = false;
+
+function voiceURL() {
+  return 'data:audio/mp4;base64,' + VOICE_B64;
+}
+
+/* 音频元素：只建一次，之后每次都用同一个（浏览器认元素，不认 URL） */
+function makeVoiceEl() {
+  var a = new Audio();
+  a.preload = 'auto';
+  a.src = voiceURL();
+  a.addEventListener('play', function () {
+    if (voiceBox) voiceBox.classList.add('playing');
+  });
+  a.addEventListener('pause', function () {
+    if (voiceBox) voiceBox.classList.remove('playing');
+  });
+  a.addEventListener('playing', function () {
+    if (voicePriming) return;
+    voicePlayed = true;            /* 真的响起来了 */
+    clearTimeout(voiceTimer);      /* 那就不需要兜底了 */
+    if (voiceBox) {
+      voiceBox.classList.remove('need-tap');
+      voiceBox.classList.add('playing');
+    }
+  });
+  a.addEventListener('ended', function () {
+    try { a.currentTime = 0; } catch (e) {}   /* 回到开头，方便再听一遍 */
+    if (voiceBox) voiceBox.classList.remove('playing');
+    if (!voicePlayed) {
+      /* 没真响过就到了头（没手势的时候有些浏览器会这样）：
+         别把结束语提前叫出来，改成让人点一下。 */
+      voiceNeedTap();
+      armVoice();
+      return;
+    }
+    if (voiceBox) voiceBox.classList.add('done');
+    voiceFinished();
+  });
+  a.addEventListener('loadedmetadata', function () {
+    voiceShowLen();
+    try { a.currentTime = 0; } catch (e) {}
+  });
+  a.addEventListener('error', function () {
+    voiceNeedTap();
+    armVoice();
+  });
+  return a;
+}
+
+/* 气泡右边那句小字：平时写「语音消息」，被挡了自动改成「点一下听」 */
+function voiceShowLen() {
+  if (!voiceBox || !voiceEl) return;
+  var len = voiceBox.querySelector('.voice-len');
+  if (!len) return;
+  var d = Math.round(voiceEl.duration || 0);
+  if (d > 0) len.textContent = Math.floor(d / 60) + ':' + String(d % 60).padStart(2, '0');
+}
+
+/* 被挡了：把气泡点亮，小字改成「点一下听」 */
+function voiceNeedTap() {
+  if (!voiceBox) return;
+  voiceBox.classList.add('need-tap');
+  var h = voiceBox.querySelector('.voice-hint');
+  if (h) h.textContent = '点一下听';
+}
+
+/* 兜底：一直没响起来也别把剧情卡在这儿 */
+function armVoice() {
+  clearTimeout(voiceTimer);
+  voiceTimer = setTimeout(function () {
+    if (voiceEnded) return;
+    voiceEnded = true;
+    showCallEnd();
+  }, 22000);
+}
+
+/* 语音放完 → 停两秒多 → 结束语 */
+function voiceFinished() {
+  clearTimeout(voiceTimer);
+  if (voiceEnded) return;
+  voiceEnded = true;
+  voiceTimer = setTimeout(showCallEnd, 2200);
+}
+
+/* 接听那一刻（那里有真实手势）先把这条音频的锁开掉：
+   静音播 60 毫秒就停，浏览器就认为这个元素被放行了，
+   十分钟后它出来的时候能自己出声。失败也没关系，右边还有点一下听。 */
+function primeVoice() {
+  if (!VOICE_B64) return;
+  try {
+    if (!voiceEl) voiceEl = makeVoiceEl();
+    voiceEl.muted = true;
+    voicePriming = true;
+    var p = voiceEl.play();
+    if (p && p.then) {
+      p.then(function () {
+        setTimeout(function () {
+          voicePriming = false;
+          try { voiceEl.pause(); voiceEl.currentTime = 0; } catch (e) {}
+          voiceEl.muted = false;
+        }, 60);
+      }, function () {
+        voicePriming = false;
+        voiceEl.muted = false;
+      });
+    } else {
+      voicePriming = false;
+      voiceEl.muted = false;
+    }
+  } catch (e) {}
+}
+
+/* 语音气泡：▶ + 波形 + 时长。出来就自动放一遍；
+   浏览器不让自动播的时候，让人点一下 ▶。 */
+function showVoiceMsg() {
+  if (!VOICE_B64) { voiceFinished(); return; }
+  voicePlayed = false;
+  voiceEnded = false;
+  if (!voiceEl) {
+    voiceEl = makeVoiceEl();
+  } else {
+    try { voiceEl.pause(); } catch (e) {}
+    try { voiceEl.currentTime = 0; } catch (e) {}
+    voiceEl.muted = false;
+  }
+  voiceBox = el('div', 'tmsg them voice');
+  var btn = el('button', 'voice-btn');
+  btn.type = 'button';
+  btn.title = '播放这条语音';
+  btn.innerHTML = '<span class="voice-ico">▶</span>' +
+    '<span class="voice-wave"><i></i><i></i><i></i><i></i><i></i></span>' +
+    '<span class="voice-len">0:00</span>';
+  var hint = el('span', 'voice-hint', '语音消息');
+  voiceBox.appendChild(btn);
+  voiceBox.appendChild(hint);
+  talkingMsgsEl.appendChild(voiceBox);
+  talkScroll();
+  voiceShowLen();
+
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (!voiceEl) return;
+    if (voiceEl.paused) {
+      try {
+        if (voiceEl.duration && voiceEl.currentTime >= voiceEl.duration - 0.05) voiceEl.currentTime = 0;
+      } catch (err) {}
+      var p = voiceEl.play();
+      if (p && p.catch) p.catch(function () {});
+    } else {
+      voiceEl.pause();
+    }
+  });
+
+  armVoice();     /* 先挂兜底：万一自动播和点击都没来，剧情也能往下走 */
+  var q = null;
+  try { q = voiceEl.play(); } catch (e) { q = null; }
+  if (q && q.catch) {
+    q.catch(function () {
+      /* 自动播被浏览器挡了：把气泡点亮，让人点一下 */
+      voiceNeedTap();
+    });
+  }
+}
+
+/* 重来一遍的时候，语音要回到没播过的状态 */
+function resetVoice() {
+  clearTimeout(voiceTimer);
+  voicePlayed = false;
+  voiceEnded = false;
+  if (voiceEl) {
+    try { voiceEl.pause(); } catch (e) {}
+    try { voiceEl.currentTime = 0; } catch (e) {}
+  }
+  voiceBox = null;
+}
+
+var CHAT = [
+  { side: 'them', text: '喂？家瑜，在忙吗' },
+  { side: 'me',   text: '不忙不忙' },
+  { side: 'them', text: '礼物拆完了吗' },
+  { side: 'me',   text: '拆完啦，一个都没落下' },
+  { side: 'them', text: '那你猜，最后一样是什么' },
+  { side: 'me',   text: '我猜是有人要跟我说话' },
+  { side: 'them', text: '嗯，是我。生日快乐呀，二十岁生日快乐。' },
+  { side: 'them', text: '以后的每一年，都有人惦记你。' }
+];
+
+function enterCallScene() {
+  clearInterval(callTimer);
+  clearTimeout(callEndTimer);
+  callPicked = false;
+  callAnswered = false;
+  /* 从这一幕开始不要背景音乐了 —— 这一段自己的情绪站得住，
+     结束语那句旋律也能听得干干净净（bgm.js 里的 bgmFadeOut）。
+     之前是「压低一档」，现在是彻底停掉。 */
+  if (typeof bgmFadeOut === 'function') bgmFadeOut();
+  Array.prototype.forEach.call(document.querySelectorAll('.call-end'), function (n) { n.remove(); });
+  phoneWrapEl.classList.remove('failed');
+  /* 一进来就是合盖来电：外屏亮着「婷来电 / 正在呼叫…」，机身轻轻发颤，
+     接听 / 先不接 两个按钮就摆在机身下方，随时可以按。 */
+  callClosed.classList.remove('on');
+  callOpen.classList.add('on');
+  callTalking.classList.remove('on');
+  syncHostBar();
+  talkingMsgsEl.innerHTML = '';
+  resetVoice();
+  callTipEl.textContent = '手机在震动 · 接听或者先不接 ✦';
+  phoneCmd('talk', '', false);
+  phoneSec(0);
+
+  showScene(document.getElementById('scene-call'));
+  loadPhone();
+  phoneCmd('close');
+  phoneCmd('buzz', '', true);
+}
+
+/* 点机身：在「先不接」之后等于重新接过来；正常开着就只是好玩地翻一下盖 */
+phoneWrapEl.addEventListener('click', function () {
+  if (!phoneReady) return;
+  if (callPicked) {
+    callPicked = false;
+    sndStrike();
+    phoneCmd('buzz', '', false);
+    phoneCmd('open');
+    callClosed.classList.remove('on');
+    callOpen.classList.add('on');
+    return;
+  }
+  phoneCmd('toggle');
+});
+
+/* ---------- 接听 / 先不接 ----------
+   按钮和手势走同一条路：手势在 iframe 里把剧情推不动，
+   原来只能靠这两个按钮，父页才知道「接了」。
+   现在「张开五指翻开」「捏合按 CALL 键」都会调 acceptCall()。 */
+function acceptCall() {
+  if (callAnswered) return;
+  callAnswered = true;
+  sndCandlePop();
+  phoneCmd('key', 'CALL');
+  phoneCmd('buzz', '', false);
+  phoneCmd('talk', '', true);
+  callOpen.classList.remove('on');
+  callClosed.classList.remove('on');
+  callTalking.classList.add('on');
+  syncHostBar();
+  /* 这一下是整幕里最真实的一次用户手势：趁它还在，
+     把后面那条语音的「自动播许可」先拿到手。 */
+  primeVoice();
+  startTalk();
+}
+
+function declineCall() {
+  if (callAnswered) return;
+  sndCandlePop();
+  callOpen.classList.remove('on');
+  callClosed.classList.add('on');
+  callPicked = true;
+  phoneCmd('close');
+  phoneCmd('talk', '', false);
+  phoneCmd('buzz', '', true);
+  syncHostBar();
+  callTipEl.textContent = '再打一次也一样，婷在等你 ✦';
+}
+
+/* 接听 */
+document.getElementById('callAccept').addEventListener('click', function (e) {
+  e.stopPropagation();
+  acceptCall();
+});
+
+/* 先不接 → 合上盖子，让它接着响 */
+document.getElementById('callDecline').addEventListener('click', function (e) {
+  e.stopPropagation();
+  declineCall();
+});
+
+/* 新消息进来了，把最新一条滚进视野（屏幕矮的时候这一块自己会滚） */
+function talkScroll() {
+  try { talkingMsgsEl.scrollTop = talkingMsgsEl.scrollHeight; } catch (e) {}
+}
+
+function startTalk() {
+  var sec = 0;
+  talkingTimeEl.textContent = '00:00';
+  phoneSec(0);
+  callTimer = setInterval(function () {
+    sec++;
+    talkingTimeEl.textContent = String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
+    phoneSec(sec);   /* 机身屏幕上也是这一通电话的时长 */
+  }, 1000);
+
+  CHAT.forEach(function (m, i) {
+    setTimeout(function () {
+      var n = el('div', 'tmsg ' + m.side, m.text);
+      talkingMsgsEl.appendChild(n);
+      talkScroll();
+      m.side === 'them' ? sndCandlePop() : sndChime();
+    }, 900 + i * 1250);
+  });
+
+  /* 文字版说完 → 对方发来一条录好的原声；语音放完才收尾。
+     没有语音文件的时候（VOICE_B64 是空的），就按老规矩直接进结束语。 */
+  clearTimeout(callEndTimer);
+  var voiceAt = 900 + CHAT.length * 1250;
+  if (VOICE_B64) {
+    setTimeout(showVoiceMsg, voiceAt);
+  } else {
+    callEndTimer = setTimeout(showCallEnd, voiceAt + 1600);
+  }
+}
+function endTalkNow() {
+  clearInterval(callTimer);
+  clearTimeout(callEndTimer);
+  showCallEnd();
+}
+
+document.getElementById('talkingHangup').addEventListener('click', function (e) {
+  e.stopPropagation();
+  endTalkNow();
+});
+
+/* 结束语 */
+function showCallEnd() {
+  clearInterval(callTimer);
+  if (voiceEl) voiceEl.pause();      /* 挂断/收尾时，语音别还在底下继续放 */
+  phoneCmd('talk', '', false);
+  var end = el('div', 'call-end',
+    '<div class="call-end-line" style="animation-delay:.4s">通话时长不重要</div>' +
+    '<div class="call-end-line" style="animation-delay:1.5s">重要的是这通电话是你接的</div>' +
+    '<div class="call-end-line" style="animation-delay:2.6s">生日快乐 宝宝 ✦</div>' +
+    '<button class="call-end-replay" type="button">再听一遍这段通话</button>' +
+    '<button class="call-end-again" type="button">从头再来一遍</button>');
+  document.body.appendChild(end);
+  requestAnimationFrame(function () { end.classList.add('show'); });
+  sndMelody();
+  /* 结束语这一段字要读得清 —— 背景音乐在进这一幕时就已经停了（bgmFadeOut），
+     这里再压一档只是兜底：万一用户在通话中途又手动点开了 ♪。 */
+  if (typeof bgmDuck === 'function') bgmDuck(3600);
+  end.querySelector('.call-end-replay').addEventListener('click', function (e) {
+    e.stopPropagation();
+    end.remove();
+    enterCallScene();
+  });
+  end.querySelector('.call-end-again').addEventListener('click', function (e) {
+    e.stopPropagation();
+    end.remove();
+    restartAll();          /* 定义在 parkJs 里，同一个 <script> 块，会自动提升 */
+  });
+}
+
+
+/* ============================================================
+   流程接线
+   20 颗星 → 游乐园 → 接电话
+   ============================================================ */
+
+const parkFrameEl=$('#parkFrame'),parkIntroEl=$('#parkIntro'),parkEnterEl=$('#parkEnter'),
+      parkNextEl=$('#parkNext'),parkTipEl=$('#parkTip');
+let parkLoaded=false,parkReady=false,parkFireworksWanted=false;
+
+/* --- 父页 → 沙盘发指令 ---
+   沙盘整份以 base64 内嵌成 data: URL 塞进 iframe，data: 的 origin 是不透明的，
+   父页够不到它的 contentWindow，只能走 postMessage('*')。
+   {park:'fireworks'} = 让沙盘放一场烟花秀；{park:'reset'} = 让它把正在放的停下来。 */
+function parkCmd(cmd){
+  if(!parkFrameEl.contentWindow)return;
+  try{parkFrameEl.contentWindow.postMessage({park:cmd},'*');}catch(e){}
+}
+
+/* --- 沙盘 → 父页：炸了一发 ---
+   沙盘整份塞在 data: iframe 里，data: 的 origin 是不透明的，
+   用户在父页里的点击不会给这个 iframe 授予「用户激活」，
+   它自己的 AudioContext 会被浏览器按在 suspended，发不出声。
+   父页这边是同一个文档，早就被「输密码」那一下激活过了，AudioContext 是通的，
+   所以真正发声的是父页：沙盘只负责报告「刚刚炸了一发」。
+   fw-audio.js 这份源码父页也有一份（见下面内联的那一段），两边共用同一个配方。 */
+addEventListener('message',function(e){
+  const d=e.data;
+  if(!d||d.park!=='boom')return;
+  if(typeof FWAudio!=='undefined')FWAudio.play(d.v,d.big,d.quiet);
+});
+
+/* 开场幕要先是一整片黑星空，沙盘得等点「推门进去」之后才淡上来，
+   否则透出来的是一团发灰的微缩建筑，不是星空。 */
+function revealPark(){if(parkFrameEl.classList.contains('on'))return;parkFrameEl.classList.add('on');}
+
+function parkURL(kind){
+  try{
+    if(kind==='blob'){
+      const bin=atob(PARK_B64),arr=new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+      return URL.createObjectURL(new Blob([arr],{type:'text/html;charset=utf-8'}));
+    }
+    return 'data:text/html;charset=utf-8;base64,'+PARK_B64;
+  }catch(e){return '';}
+}
+function loadPark(){
+  if(parkLoaded)return;parkLoaded=true;
+  let settled=false;
+  /* 注意这里不能调 revealPark()：开场幕期间沙盘必须保持不可见，
+     真正淡入的时机是玩家点「推门进去」。 */
+  const ready=()=>{if(settled)return;settled=true;parkReady=true;
+    /* 玩家可能比沙盘加载得还早（手快点了「推门进去」）：这时候补发一条，别把烟花漏了 */
+    if(parkFireworksWanted)parkCmd('fireworks');};
+  parkFrameEl.addEventListener('load',ready);
+  parkFrameEl.addEventListener('error',()=>{
+    if(settled)return;settled=true;
+    parkIntroEl.querySelector('.park-sub').innerHTML='游乐园没能打开<br>换一个浏览器再试一次就好啦';
+  });
+  parkFrameEl.src=parkURL('data');
+  /* 保险：万一 data: 被浏览器拦下，退回 blob: 再试一次 */
+  setTimeout(()=>{if(!settled)parkFrameEl.src=parkURL('blob');},7000);
+}
+
+/* --- 20 颗星 → 游乐园 --- */
+/* 原来这里是先进「伞下心事」再进游乐园，两幕都在 2026-10-19 删掉了。
+   现在星星收齐之后点一下就直接推开游乐园的门。
+   原来 enterUmbrella() 顺手做的两件清理（把 starFinal 的字收掉、
+   把汇聚的 20 颗金星 overlay 摘掉）搬进了这个点击回调里 ——
+   overlay 挂在 body 上（z-index 29），showScene() 不会碰它，不摘会盖住游乐园。 */
+function armParkEntry(){
+  parkTipEl.classList.add('show');
+  starFinalEl.addEventListener('click',()=>{
+    parkTipEl.classList.remove('show');
+    starFinalEl.classList.remove('show');
+    const gatherOverlay=document.getElementById('starGatherOverlay');
+    if(gatherOverlay)gatherOverlay.remove();
+    openPark();
+  },{once:true});
+}
+
+function openPark(){
+  parkFrameEl.style.display='';
+  showScene($('#scene-park'));
+  loadPark();
+}
+
+/* --- 游乐园 → 接电话 --- */
+parkEnterEl.addEventListener('click',e=>{
+  e.stopPropagation();
+  parkIntroEl.classList.add('hide');
+  revealPark();
+  setTimeout(()=>parkNextEl.classList.add('show'),700);
+  /* 推门进去就把烟花放起来 —— 不用再让玩家自己在沙盘里找「烟花秀」那个按钮。
+     沙盘里那个按钮还在，放完了还能再点一次重放。 */
+  parkFireworksWanted=true;
+  if(parkReady)parkCmd('fireworks');
+});
+parkNextEl.addEventListener('click',e=>{
+  e.stopPropagation();
+  parkFrameEl.style.display='none';
+  enterCallScene();
+});
+
+/* --- 从头再来一遍 ---
+   整封信是同一个 <script> 块里的顶层 let/const，所以密码门、信纸、火柴蛋糕、
+   二十颗星、沙盘入口这几段的状态都能在这里直接改回去。
+   凡是 setInterval / setTimeout / rAF / mediaStream 都得手动掐掉，
+   否则重玩一次之后会有两个飘雪循环同时跑。 */
+function restartAll(){
+  /* 1) 清场：面板、粒子、计时器 */
+  var kill=document.querySelectorAll('.call-end,.gift-reward,.et-spark');
+  for(var i=0;i<kill.length;i++)kill[i].remove();
+  var ov=document.getElementById('starGatherOverlay');if(ov)ov.remove();
+  clearTimeout(starAutoTimer);starAutoTimer=null;starOpen=false;
+  starCardEl.classList.remove('show');
+  clearInterval(callTimer);clearTimeout(callEndTimer);
+
+  /* 2) 密码门 */
+  typed='';pwState='idle';pwInput.value='';renderBoxes();
+  pwStage.classList.remove('ok','shake');
+  /* 密码格子是 .pw-box{opacity:0} + .activated 才显形，而 activated 是页面加载时
+     一次性排的 setTimeout。只把 class 清掉而不重排，格子就再也不会出现了 —— 必须重排。
+     注意复位要用 removeAttribute：dataset 存的是字符串，'0' 在 if 里是真值，
+     写 dataset.activated='0' 会让下面的守卫直接 return，class 永远加不上。 */
+  boxes.forEach(function(b,i){
+    b.classList.remove('wrong','activated');
+    b.removeAttribute('data-activated');
+    setTimeout(function(){if(b.dataset.activated)return;b.dataset.activated='1';b.classList.add('activated');},3200+i*300);
+  });
+
+  /* 3) 信纸 */
+  letterRolled=false;rollBtn.classList.remove('clicked');
+  paperViewport.style.height='';rollerBottom.style.bottom='';rollBundle.style.height='';
+
+  /* 4) 火柴蛋糕：把「划火柴 → 点蜡烛 → 吹蜡烛」三段的状态整体清干净。
+     这一幕有三类后台任务，漏掉任何一个，重玩一次就会多跑一份：
+     setInterval（粉雾 / 梦境微粒）、rAF（烛光摇曳）、mediaStream（麦克风）。
+     粒子是 parts[] 里逐个 append 到 #scene-match 的普通 div，清数组的同时
+     要把节点摘掉，不然会留一层永远不消失的灰点。 */
+  clearTimeout(autoTimer);autoTimer=null;
+  stopPinkMotes();stopDreamyMotes();stopCakeDynamics();
+  if(micStream){micStream.getTracks().forEach(function(t){t.stop()});micStream=null;}
+  micOk=false;micAnalyser=null;blowActive=false;blown=false;blowHits=0;
+  for(var pi=parts.length-1;pi>=0;pi--)parts[pi].el.remove();
+  parts.length=0;
+  /* 划火柴的临时状态：dragging 必须先落回 false，否则下一遍按下时
+     onPointerMove 会拿旧的 dragOff 把火柴瞬移走。 */
+  strikePhase=false;ignited=false;dragging=false;dragEverStarted=false;
+  dragOff={x:0,y:0};lastPt=null;slideDist=0;lastScrapeAt=0;
+  matchStarted=false;
+  /* 位姿回到 applyMatch 的初始值，和页面首次加载时完全一致 */
+  applyMatch(150,230,30,1);
+  matchEl.classList.remove('hint');
+  matchFlameEl.classList.remove('lit');
+  boxEl.classList.remove('gone');
+  cakeEl.classList.remove('show');
+  strikeHintEl.classList.remove('show');
+  wishUI.classList.remove('show');
+  blowUI.classList.remove('show');
+  /* 光斑的 left/top/transform/opacity 全是脚本写的内联样式，
+     一次清空比逐个置空干净；HTML 里它本来就没有 style 属性。 */
+  lightPool.classList.remove('following');
+  lightPool.style.cssText='';
+  candleFlames.forEach(function(f){f.classList.remove('lit','out')});
+  micStatusEl.textContent='🎤 对麦克风吹气，或者点一下屏幕';
+
+  /* 5) 二十颗星 */
+  starsReady=false;finalAdvancing=false;finalTipEl.classList.remove('ready');
+  var yStar=document.querySelector('.final-lines .yellow-star');
+  if(yStar){yStar.style.transition='none';yStar.style.transform='';yStar.style.opacity='';void yStar.offsetWidth;yStar.style.transition='transform .55s, opacity .55s';}
+  starFinalEl.classList.remove('show');
+  parkTipEl.classList.remove('show');
+
+  /* 6) 游乐园沙盘：下一遍重新推门进去 */
+  parkNextEl.classList.remove('show');
+  parkIntroEl.classList.remove('hide');
+  parkFrameEl.classList.remove('on');parkFrameEl.style.display='';
+  parkLoaded=false;parkReady=false;
+  parkFireworksWanted=false;
+  /* 沙盘在 iframe 里，父页够不着它 —— 用 postMessage 叫它把正在放的烟花秀停下来，
+     不然重玩一遍之后天上还在放上一场的余烟。 */
+  parkCmd('reset');
+
+  /* 7) 回到第一幕 */
+  showScene($('#scene-pass'));
+  pwInput.focus();
+  /* 8) 背景音乐重新武装回「第一次手势就开播」。
+        进「接电话」那一幕时音乐已经彻底停了（bgmFadeOut），
+        但信从头走，前面的段落还是要有音乐的 —— 所以这里得把它放回去。 */
+  if (typeof bgmRearm === 'function') bgmRearm();
+}</script>
+</body>
+</html>
